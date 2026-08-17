@@ -350,6 +350,40 @@ button:last-child {
   font-size: 1.5rem;
 }
 
+.data-sheet-header {
+  margin-bottom: 0.3in;
+}
+
+.data-sheet-field {
+  display: flex;
+  align-items: center;
+  gap: 0.2in;
+  margin: 0 0 0.18in;
+  font-size: 1rem;
+}
+
+.data-sheet-field:last-child {
+  margin-bottom: 0;
+}
+
+.data-sheet-label {
+  font-weight: 700;
+}
+
+.data-sheet-line {
+  display: inline-block;
+  height: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.data-sheet-line-student {
+  width: 4.25in;
+}
+
+.data-sheet-line-date {
+  width: 2in;
+}
+
 .data-sheet-table {
   width: 100%;
   border-collapse: collapse;
@@ -376,26 +410,16 @@ button:last-child {
 
 .data-sheet-table th:nth-child(1),
 .data-sheet-table td:nth-child(1) {
-  width: 16%;
+  width: 28%;
 }
 
-.data-sheet-table th:nth-child(2),
-.data-sheet-table td:nth-child(2) {
-  width: 12%;
-}
-
-.data-sheet-table th:nth-child(3),
-.data-sheet-table td:nth-child(3) {
-  width: 14%;
-}
-
-.data-sheet-table th:nth-child(n + 4):nth-child(-n + 8),
-.data-sheet-table td:nth-child(n + 4):nth-child(-n + 8) {
+.data-sheet-table th:nth-child(n + 2):nth-child(-n + 6),
+.data-sheet-table td:nth-child(n + 2):nth-child(-n + 6) {
   width: 10%;
 }
 
-.data-sheet-table th:nth-child(9),
-.data-sheet-table td:nth-child(9) {
+.data-sheet-table th:nth-child(7),
+.data-sheet-table td:nth-child(7) {
   width: 8%;
 }
 
@@ -476,6 +500,10 @@ button:last-child {
 
   .data-sheet-title {
     margin-bottom: 0.3in;
+  }
+
+  .data-sheet-header {
+    margin-bottom: 0.25in;
   }
 
   .data-sheet-table thead {
