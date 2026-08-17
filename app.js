@@ -1,4 +1,4 @@
-import { RELATIONSHIPS, buildCardSet } from '/home/runner/work/Cardmaker/Cardmaker/logic.js';
+import { RELATIONSHIPS, buildCardSet } from './logic.js';
 
 const relationshipSelect = document.getElementById('relationship');
 const arraySizeSelect = document.getElementById('arraySize');
