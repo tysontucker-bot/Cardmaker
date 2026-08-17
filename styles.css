@@ -192,6 +192,136 @@ button:last-child {
   letter-spacing: 0.08em;
 }
 
+/* ── Card wrapper & Change Picture controls ───────────────────────────────── */
+
+.card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.card-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.change-pic-btn {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.change-pic-btn:hover {
+  background: #374151;
+}
+
+.change-pic-panel {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.cpc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cpc-section strong {
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.cpc-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cpc-search-input {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 0;
+}
+
+.cpc-action-btn {
+  padding: 0.3rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cpc-action-btn:hover {
+  background: #1d4ed8;
+}
+
+.cpc-keep-btn {
+  background: #6b7280;
+  align-self: flex-start;
+}
+
+.cpc-keep-btn:hover {
+  background: #374151;
+}
+
+.cpc-thumb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.cpc-thumb {
+  background: #fff;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  padding: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cpc-thumb:hover {
+  border-color: var(--accent);
+}
+
+.cpc-thumb img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+
+.cpc-file-input {
+  font-size: 0.82rem;
+  margin-top: 0;
+  width: auto;
+  padding: 0.2rem;
+}
+
+.cpc-loading,
+.cpc-msg {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 @page {
   size: letter portrait;
   margin: 0.35in;
@@ -204,8 +334,9 @@ button:last-child {
 
   .controls,
   .source-footer,
-  header {
-    display: none;
+  header,
+  .no-print {
+    display: none !important;
   }
 
   .app-shell {
