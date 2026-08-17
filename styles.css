@@ -324,7 +324,7 @@ button:last-child {
 
 @page {
   size: letter portrait;
-  margin: 0.35in;
+  margin: 0;
 }
 
 @media print {
@@ -349,10 +349,28 @@ button:last-child {
     border: none;
     border-radius: 0;
     padding: 0;
+    width: 8.5in;
+    height: 11in;
     page-break-after: always;
+    break-after: page;
+    overflow: hidden;
   }
 
   .print-page:last-child {
     page-break-after: auto;
+    break-after: auto;
+  }
+
+  .cards-grid {
+    gap: 0;
+    width: 8.5in;
+    height: 11in;
+    grid-template-rows: repeat(3, 1fr);
+  }
+
+  .instruction-card {
+    height: auto;
+    border-radius: 0;
+    break-inside: avoid;
   }
 }
