@@ -105,12 +105,13 @@ button:last-child {
 .instruction-card {
   border: 4px solid var(--border);
   border-radius: 18px;
-  min-height: 3.1in;
-  display: grid;
-  grid-template-rows: 1fr auto;
+  height: 3.1in;
+  display: flex;
+  flex-direction: column;
   padding: 0.16in;
   background: white;
   break-inside: avoid;
+  overflow: hidden;
 }
 
 .stimulus-area {
@@ -119,8 +120,10 @@ button:last-child {
   align-items: center;
   border: 2px solid #d1d5db;
   border-radius: 12px;
-  margin-bottom: 0.12in;
-  min-height: 1.45in;
+  margin-bottom: 0.1in;
+  flex: 7;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .stimulus-text {
@@ -129,30 +132,39 @@ button:last-child {
 }
 
 .choices-area {
-  display: grid;
-  gap: 0.08in;
+  display: flex;
+  flex-direction: row;
+  gap: 0.06in;
+  flex: 3;
+  min-height: 0;
 }
 
 .choice-item {
+  flex: 1;
   border: 2px solid #9ca3af;
   border-radius: 10px;
-  min-height: 0.55in;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
-  padding: 0.06in;
+  padding: 0.04in;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .picture-box {
   width: 100%;
+  height: 100%;
   text-align: center;
-  display: grid;
-  justify-items: center;
-  gap: 0.2rem;
-  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.1rem;
 }
 
 .picture-box img {
@@ -162,8 +174,8 @@ button:last-child {
 }
 
 .picture-box.small img {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
 }
 
 .picture-fallback {
@@ -171,6 +183,7 @@ button:last-child {
   border-radius: 8px;
   padding: 0.25rem;
   min-width: 60px;
+  text-align: center;
 }
 
 .quantity-dots {
