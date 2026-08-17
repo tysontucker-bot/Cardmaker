@@ -405,11 +405,40 @@ function createDataSheet() {
   title.className = 'data-sheet-title';
   title.textContent = 'Data Collection Sheet';
 
+  const header = document.createElement('div');
+  header.className = 'data-sheet-header';
+
+  const studentField = document.createElement('p');
+  studentField.className = 'data-sheet-field';
+
+  const studentLabel = document.createElement('span');
+  studentLabel.className = 'data-sheet-label';
+  studentLabel.textContent = 'Student:';
+  studentField.appendChild(studentLabel);
+
+  const studentLine = document.createElement('span');
+  studentLine.className = 'data-sheet-line data-sheet-line-student';
+  studentField.appendChild(studentLine);
+  header.appendChild(studentField);
+
+  const dateField = document.createElement('p');
+  dateField.className = 'data-sheet-field';
+
+  const dateLabel = document.createElement('span');
+  dateLabel.className = 'data-sheet-label';
+  dateLabel.textContent = 'Date:';
+  dateField.appendChild(dateLabel);
+
+  const dateLine = document.createElement('span');
+  dateLine.className = 'data-sheet-line data-sheet-line-date';
+  dateField.appendChild(dateLine);
+  header.appendChild(dateField);
+
   const table = document.createElement('table');
   table.className = 'data-sheet-table';
 
   const headerRow = document.createElement('tr');
-  ['Student', 'Date', 'Target', 'Trial 1', 'Trial 2', 'Trial 3', 'Trial 4', 'Trial 5', '%'].forEach((label) => {
+  ['Target', 'Trial 1', 'Trial 2', 'Trial 3', 'Trial 4', 'Trial 5', '%'].forEach((label) => {
     const heading = document.createElement('th');
     heading.scope = 'col';
     heading.textContent = label;
@@ -423,9 +452,6 @@ function createDataSheet() {
   const tbody = document.createElement('tbody');
   targets.forEach((target) => {
     const row = document.createElement('tr');
-    row.appendChild(createEmptyCell());
-    row.appendChild(createEmptyCell());
-
     const targetCell = document.createElement('td');
     targetCell.textContent = target.left;
     row.appendChild(targetCell);
@@ -440,6 +466,7 @@ function createDataSheet() {
   table.appendChild(tbody);
   page.appendChild(actions);
   page.appendChild(title);
+  page.appendChild(header);
   page.appendChild(table);
   preview.appendChild(page);
 
