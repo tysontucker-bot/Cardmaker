@@ -85,13 +85,23 @@ async function renderPictureBox(label, cssClass = 'picture-box', overrideData = 
   box.className = cssClass;
 
   if (overrideData) {
-    box.innerHTML = `<img src="${overrideData.imageUrl}" alt="${overrideData.alt}" />`;
+    const img = document.createElement('img');
+    img.src = overrideData.imageUrl;
+    img.alt = overrideData.alt;
+    box.appendChild(img);
   } else {
     const symbol = await fetchArasaacSymbol(label);
     if (symbol) {
-      box.innerHTML = `<img src="${symbol.imageUrl}" alt="${label}" />`;
+      const img = document.createElement('img');
+      img.src = symbol.imageUrl;
+      img.alt = label;
+      box.appendChild(img);
     } else {
-      box.innerHTML = `<div class="picture-fallback" aria-label="No symbol found for ${label}">${label}</div>`;
+      const fallback = document.createElement('div');
+      fallback.className = 'picture-fallback';
+      fallback.setAttribute('aria-label', `No symbol found for ${label}`);
+      fallback.textContent = label;
+      box.appendChild(fallback);
     }
   }
 
@@ -221,11 +231,15 @@ function buildChangePictureControls(card, stimulusArea) {
       data.slice(0, 20).forEach((item) => {
         const id = item._id;
         const imgUrl = `https://static.arasaac.org/pictograms/${id}/${id}_500.png`;
+        const altText = item.keywords?.[0]?.keyword ?? term;
         const thumb = document.createElement('button');
         thumb.type = 'button';
         thumb.className = 'cpc-thumb';
         thumb.setAttribute('aria-label', `Select pictogram ${id}`);
-        thumb.innerHTML = `<img src="${imgUrl}" alt="${item.keywords?.[0]?.keyword ?? term}" />`;
+        const thumbImg = document.createElement('img');
+        thumbImg.src = imgUrl;
+        thumbImg.alt = altText;
+        thumb.appendChild(thumbImg);
         thumb.addEventListener('click', () => {
           applyPictureOverride(key, { imageUrl: imgUrl, alt: term }, stimulusArea);
           panel.hidden = true;
