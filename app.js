@@ -82,9 +82,9 @@ async function renderPictureBox(label, cssClass = 'picture-box') {
 
   const symbol = await fetchArasaacSymbol(label);
   if (symbol) {
-    box.innerHTML = `<img src="${symbol.imageUrl}" alt="${label}" /><small><a href="${symbol.sourceUrl}" target="_blank" rel="noopener noreferrer">${symbol.attribution}</a></small>`;
+    box.innerHTML = `<img src="${symbol.imageUrl}" alt="${label}" />`;
   } else {
-    box.innerHTML = `<div class="picture-fallback" aria-label="No symbol found for ${label}">${label}</div><small>No ARASAAC symbol found</small>`;
+    box.innerHTML = `<div class="picture-fallback" aria-label="No symbol found for ${label}">${label}</div>`;
   }
 
   return box;
