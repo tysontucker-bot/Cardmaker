@@ -1,0 +1,19 @@
+{
+  "name": "cardmaker",
+  "version": "1.0.0",
+  "description": "Instructional matching-card generator for special education teachers",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "test": "node --test"
+  },
+  "keywords": [
+    "special-education",
+    "matching-cards",
+    "printable",
+    "instructional-materials"
+  ],
+  "author": "",
+  "license": "ISC"
+}

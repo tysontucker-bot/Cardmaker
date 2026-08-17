@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructional Cardmaker</title>
+    <link rel="stylesheet" href="/home/runner/work/Cardmaker/Cardmaker/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <h1>Instructional Matching-Card Generator</h1>
+        <p>Create print-ready instructional matching cards for emerging learners.</p>
+      </header>
+
+      <section class="panel controls" aria-label="Card generation controls">
+        <div class="control-grid">
+          <label>
+            Matching relationship
+            <select id="relationship"></select>
+          </label>
+
+          <label>
+            Array size
+            <select id="arraySize">
+              <option value="2">Array of 2</option>
+              <option value="3" selected>Array of 3</option>
+              <option value="4">Array of 4</option>
+              <option value="5">Array of 5</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Target item pool (one item per line)
+          <textarea id="targets" rows="10" placeholder="sun\npig\njam\ncat\nbed\nmop\nlog\ncup\ndog\nhat"></textarea>
+        </label>
+
+        <p class="hint">Optional pair format for non-identical targets: <code>stimulus -> response</code>.</p>
+
+        <fieldset>
+          <legend>Distractor requirements</legend>
+          <div class="control-grid">
+            <label><input type="checkbox" id="sameLength" /> Same length as target</label>
+            <label><input type="checkbox" id="differentInitial" checked /> Different initial letter than target</label>
+            <label><input type="checkbox" id="uniqueInitials" checked /> Distractors use different initial letters</label>
+            <label>
+              Exact character length (optional)
+              <input id="exactLength" type="number" min="1" placeholder="e.g. 3" />
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="button-row">
+          <button id="generate" type="button">Generate cards</button>
+          <button id="print" type="button">Print / Save as PDF</button>
+        </div>
+
+        <p id="status" aria-live="polite"></p>
+      </section>
+
+      <section id="preview" class="preview" aria-label="Card preview"></section>
+
+      <footer class="source-footer">
+        <small>
+          Picture symbols sourced from ARASAAC when available (CC BY-NC-SA).
+          Source links are shown on picture cards.
+        </small>
+      </footer>
+    </main>
+
+    <script type="module" src="/home/runner/work/Cardmaker/Cardmaker/app.js"></script>
+  </body>
+</html>
