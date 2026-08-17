@@ -63,6 +63,7 @@ fieldset {
 .button-row {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 button {
@@ -334,6 +335,70 @@ button:last-child {
   font-style: italic;
 }
 
+.data-sheet-page {
+  padding: 0.5in;
+}
+
+.data-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.data-sheet-title {
+  margin: 0 0 0.35in;
+  font-size: 1.5rem;
+}
+
+.data-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: white;
+}
+
+.data-sheet-table th,
+.data-sheet-table td {
+  border: 2px solid var(--border);
+  padding: 0.2in 0.12in;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 1rem;
+}
+
+.data-sheet-table th {
+  font-weight: 700;
+}
+
+.data-sheet-table td {
+  height: 0.7in;
+}
+
+.data-sheet-table th:nth-child(1),
+.data-sheet-table td:nth-child(1) {
+  width: 16%;
+}
+
+.data-sheet-table th:nth-child(2),
+.data-sheet-table td:nth-child(2) {
+  width: 12%;
+}
+
+.data-sheet-table th:nth-child(3),
+.data-sheet-table td:nth-child(3) {
+  width: 14%;
+}
+
+.data-sheet-table th:nth-child(n + 4):nth-child(-n + 8),
+.data-sheet-table td:nth-child(n + 4):nth-child(-n + 8) {
+  width: 10%;
+}
+
+.data-sheet-table th:nth-child(9),
+.data-sheet-table td:nth-child(9) {
+  width: 8%;
+}
+
 @page {
   size: letter portrait;
   margin: 0;
@@ -373,6 +438,13 @@ button:last-child {
     break-after: auto;
   }
 
+  .data-sheet-page {
+    min-height: 11in;
+    height: auto;
+    padding: 0.5in;
+    overflow: visible;
+  }
+
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -400,5 +472,18 @@ button:last-child {
   .choice-item,
   .picture-fallback {
     border-radius: 0;
+  }
+
+  .data-sheet-title {
+    margin-bottom: 0.3in;
+  }
+
+  .data-sheet-table thead {
+    display: table-header-group;
+  }
+
+  .data-sheet-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

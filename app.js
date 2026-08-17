@@ -1,9 +1,10 @@
-import { RELATIONSHIPS, buildCardSet } from './logic.js';
+import { RELATIONSHIPS, buildCardSet, parseTargetLines } from './logic.js';
 
 const relationshipSelect = document.getElementById('relationship');
 const arraySizeSelect = document.getElementById('arraySize');
 const targetsInput = document.getElementById('targets');
 const generateButton = document.getElementById('generate');
+const createDataSheetButton = document.getElementById('createDataSheet');
 const printButton = document.getElementById('print');
 const preview = document.getElementById('preview');
 const status = document.getElementById('status');
@@ -328,6 +329,10 @@ function chunkCards(cards, chunkSize) {
   return chunks;
 }
 
+function getCurrentTargets() {
+  return parseTargetLines(targetsInput.value);
+}
+
 async function generateCards() {
   const relationshipId = relationshipSelect.value;
   const arraySize = parseInt(arraySizeSelect.value, 10);
@@ -368,8 +373,84 @@ async function generateCards() {
   status.textContent = `Generated ${cards.length} cards across ${pages.length} page(s).`;
 }
 
+function createEmptyCell() {
+  const cell = document.createElement('td');
+  return cell;
+}
+
+function createDataSheet() {
+  const targets = getCurrentTargets();
+
+  if (targets.length === 0) {
+    status.textContent = 'Please enter at least one target item.';
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.innerHTML = '';
+
+  const page = document.createElement('section');
+  page.className = 'print-page data-sheet-page';
+
+  const actions = document.createElement('div');
+  actions.className = 'data-sheet-actions no-print';
+
+  const dataSheetPrintButton = document.createElement('button');
+  dataSheetPrintButton.type = 'button';
+  dataSheetPrintButton.textContent = 'Print Data Sheet';
+  dataSheetPrintButton.addEventListener('click', () => window.print());
+  actions.appendChild(dataSheetPrintButton);
+
+  const title = document.createElement('h2');
+  title.className = 'data-sheet-title';
+  title.textContent = 'Data Collection Sheet';
+
+  const table = document.createElement('table');
+  table.className = 'data-sheet-table';
+
+  const headerRow = document.createElement('tr');
+  ['Student', 'Date', 'Target', 'Trial 1', 'Trial 2', 'Trial 3', 'Trial 4', 'Trial 5', '%'].forEach((label) => {
+    const heading = document.createElement('th');
+    heading.scope = 'col';
+    heading.textContent = label;
+    headerRow.appendChild(heading);
+  });
+
+  const thead = document.createElement('thead');
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  targets.forEach((target) => {
+    const row = document.createElement('tr');
+    row.appendChild(createEmptyCell());
+    row.appendChild(createEmptyCell());
+
+    const targetCell = document.createElement('td');
+    targetCell.textContent = target.left;
+    row.appendChild(targetCell);
+
+    for (let i = 0; i < 6; i += 1) {
+      row.appendChild(createEmptyCell());
+    }
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  page.appendChild(actions);
+  page.appendChild(title);
+  page.appendChild(table);
+  preview.appendChild(page);
+
+  status.textContent = `Generated data sheet for ${targets.length} target(s).`;
+}
+
 initRelationshipOptions();
 generateButton.addEventListener('click', () => {
   generateCards();
+});
+createDataSheetButton.addEventListener('click', () => {
+  createDataSheet();
 });
 printButton.addEventListener('click', () => window.print());
