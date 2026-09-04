@@ -471,7 +471,7 @@ button:last-child {
 
   .cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
     width: 8.5in;
     height: 11in;
