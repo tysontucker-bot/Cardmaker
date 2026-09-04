@@ -355,7 +355,7 @@ async function generateCards() {
 
   preview.innerHTML = '';
 
-  const pages = chunkCards(cards, 9);
+  const pages = chunkCards(cards, 6);
   for (const pageCards of pages) {
     const page = document.createElement('section');
     page.className = 'print-page';
