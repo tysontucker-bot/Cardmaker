@@ -424,12 +424,16 @@ button:last-child {
 }
 
 @page {
-  size: letter portrait;
+  size: Letter portrait;
   margin: 0;
 }
 
 @media print {
+  html,
   body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
     background: white;
   }
 
@@ -446,20 +450,27 @@ button:last-child {
     padding: 0;
   }
 
+  .preview {
+    display: block;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
   .print-page {
     border: none;
     border-radius: 0;
+    margin: 0;
     padding: 0;
     width: 8.5in;
     height: 11in;
-    page-break-after: always;
-    break-after: page;
+    box-sizing: border-box;
     overflow: hidden;
   }
 
-  .print-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
+  .print-page:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
   }
 
   .data-sheet-page {
@@ -471,20 +482,35 @@ button:last-child {
 
   .cards-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    width: 8.5in;
-    height: 11in;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    height: 100%;
     gap: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     align-items: stretch;
     justify-items: stretch;
   }
 
+  .cards-grid > * {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
   .instruction-card {
+    min-width: 0;
     width: 100%;
     height: 100%;
     min-height: 0;
     max-height: none;
+    margin: 0;
+    padding: 0.16in;
     align-self: stretch;
     justify-self: stretch;
     box-sizing: border-box;
