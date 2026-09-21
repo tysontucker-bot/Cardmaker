@@ -16,6 +16,19 @@ const symbolCache = new Map();
 const pictureOverrides = new Map();
 const choicePictureOverrides = new Map();
 
+function toggleChangePanel(panel, focusTarget) {
+  const willOpen = panel.hidden;
+  document.querySelectorAll('.change-pic-panel').forEach((candidate) => {
+    if (candidate !== panel) {
+      candidate.hidden = true;
+    }
+  });
+  panel.hidden = !willOpen;
+  if (willOpen) {
+    focusTarget.focus();
+  }
+}
+
 function initRelationshipOptions() {
   relationshipSelect.innerHTML = RELATIONSHIPS.map(
     (relation) => `<option value="${relation.id}">${relation.label}</option>`
@@ -28,15 +41,13 @@ function buildChangeChoicePictureControls(card, choice, choiceIndex, choiceArea)
   const controls = document.createElement('div');
   controls.className = 'card-controls no-print';
 
-  const changeBtn = document.createElement('button');
-  changeBtn.type = 'button';
-  changeBtn.className = 'change-pic-btn';
-  changeBtn.textContent = `🖼 Change Choice: ${choice}`;
-  controls.appendChild(changeBtn);
-
   const panel = document.createElement('div');
   panel.className = 'change-pic-panel';
   panel.hidden = true;
+
+  const panelTitle = document.createElement('strong');
+  panelTitle.textContent = `Change Choice: ${choice}`;
+  panel.appendChild(panelTitle);
 
   const searchSection = document.createElement('div');
   searchSection.className = 'cpc-section';
@@ -147,10 +158,16 @@ function buildChangeChoicePictureControls(card, choice, choiceIndex, choiceArea)
   panel.appendChild(keepSection);
   controls.appendChild(panel);
 
-  changeBtn.addEventListener('click', () => {
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) {
-      searchInput.focus();
+  choiceArea.tabIndex = 0;
+  choiceArea.setAttribute('role', 'button');
+  choiceArea.setAttribute('aria-label', `Change picture for choice ${choice}`);
+  choiceArea.addEventListener('click', () => {
+    toggleChangePanel(panel, searchInput);
+  });
+  choiceArea.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleChangePanel(panel, searchInput);
     }
   });
 
@@ -270,6 +287,7 @@ async function renderCard(card, index) {
   if (hasPictureStimulus) {
     const override = pictureOverrides.get(overrideKey(card.stimulus));
     stimulusArea.appendChild(await renderPictureBox(card.stimulus, 'picture-box', override || null));
+    stimulusArea.classList.add('click-change-target');
   } else {
     const stimulusText = document.createElement('div');
     stimulusText.className = 'stimulus-text';
@@ -286,6 +304,7 @@ async function renderCard(card, index) {
       const choiceOverride = choicePictureOverrides.get(choiceKey);
       const choiceWrapper = document.createElement('div');
       choiceWrapper.className = 'choice-item picture-choice';
+      choiceWrapper.classList.add('click-change-target');
       choiceWrapper.appendChild(
         await renderPictureBox(choice, 'picture-box small', choiceOverride || null)
       );
@@ -324,12 +343,6 @@ function buildChangePictureControls(card, stimulusArea) {
 
   const controls = document.createElement('div');
   controls.className = 'card-controls no-print';
-
-  const changeBtn = document.createElement('button');
-  changeBtn.type = 'button';
-  changeBtn.className = 'change-pic-btn';
-  changeBtn.textContent = '🖼 Change Picture';
-  controls.appendChild(changeBtn);
 
   // Inline panel (hidden until button clicked)
   const panel = document.createElement('div');
@@ -449,10 +462,16 @@ function buildChangePictureControls(card, stimulusArea) {
   panel.appendChild(keepSection);
   controls.appendChild(panel);
 
-  changeBtn.addEventListener('click', () => {
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) {
-      searchInput.focus();
+  stimulusArea.tabIndex = 0;
+  stimulusArea.setAttribute('role', 'button');
+  stimulusArea.setAttribute('aria-label', `Change picture for ${card.stimulus}`);
+  stimulusArea.addEventListener('click', () => {
+    toggleChangePanel(panel, searchInput);
+  });
+  stimulusArea.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleChangePanel(panel, searchInput);
     }
   });
 
