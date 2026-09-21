@@ -337,6 +337,8 @@ button:last-child {
 
 .data-sheet-page {
   padding: 0.5in;
+  display: flex;
+  flex-direction: column;
 }
 
 .data-sheet-actions {
@@ -421,6 +423,58 @@ button:last-child {
 .data-sheet-table th:nth-child(7),
 .data-sheet-table td:nth-child(7) {
   width: 8%;
+}
+
+.weekly-progress-section {
+  margin-top: auto;
+  padding-top: 0.3in;
+}
+
+.weekly-progress-title {
+  margin: 0 0 0.14in;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.weekly-progress-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+}
+
+.weekly-progress-table th,
+.weekly-progress-table td {
+  border: 1.5px solid #000;
+  text-align: center;
+  vertical-align: middle;
+  color: #000;
+  font-size: 0.92rem;
+  font-weight: 400;
+  height: 0.36in;
+  padding: 0.04in;
+}
+
+.weekly-progress-table thead th {
+  font-weight: 700;
+}
+
+.weekly-progress-corner,
+.weekly-progress-score {
+  width: 0.62in;
+}
+
+.weekly-progress-score {
+  font-weight: 700;
+}
+
+.weekly-progress-box {
+  display: inline-block;
+  width: 0.28in;
+  height: 0.28in;
+  border: 1.5px solid #000;
+  background: #fff;
 }
 
 @page {

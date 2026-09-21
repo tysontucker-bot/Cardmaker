@@ -378,6 +378,67 @@ function createEmptyCell() {
   return cell;
 }
 
+function createWeeklyProgressSection() {
+  const section = document.createElement('section');
+  section.className = 'weekly-progress-section';
+
+  const title = document.createElement('h3');
+  title.className = 'weekly-progress-title';
+  title.textContent = 'Weekly Progress';
+  section.appendChild(title);
+
+  const table = document.createElement('table');
+  table.className = 'weekly-progress-table';
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+
+  const cornerHeading = document.createElement('th');
+  cornerHeading.scope = 'col';
+  cornerHeading.className = 'weekly-progress-corner';
+  headerRow.appendChild(cornerHeading);
+
+  days.forEach((day) => {
+    const heading = document.createElement('th');
+    heading.scope = 'col';
+    heading.textContent = day;
+    headerRow.appendChild(heading);
+  });
+
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  for (let score = 10; score >= 1; score -= 1) {
+    const row = document.createElement('tr');
+
+    const scoreHeading = document.createElement('th');
+    scoreHeading.scope = 'row';
+    scoreHeading.className = 'weekly-progress-score';
+    scoreHeading.textContent = String(score);
+    row.appendChild(scoreHeading);
+
+    days.forEach(() => {
+      const cell = document.createElement('td');
+      const box = document.createElement('span');
+      box.className = 'weekly-progress-box';
+      box.setAttribute('aria-hidden', 'true');
+      cell.appendChild(box);
+      row.appendChild(cell);
+    });
+
+    tbody.appendChild(row);
+  }
+
+  table.appendChild(tbody);
+  section.appendChild(table);
+
+  return section;
+}
+
 function createDataSheet() {
   const targets = getCurrentTargets();
 
@@ -468,6 +529,7 @@ function createDataSheet() {
   page.appendChild(title);
   page.appendChild(header);
   page.appendChild(table);
+  page.appendChild(createWeeklyProgressSection());
   preview.appendChild(page);
 
   status.textContent = `Generated data sheet for ${targets.length} target(s).`;
