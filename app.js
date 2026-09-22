@@ -3,6 +3,7 @@ import { RELATIONSHIPS, buildCardSet, parseTargetLines } from './logic.js';
 const relationshipSelect = document.getElementById('relationship');
 const arraySizeSelect = document.getElementById('arraySize');
 const cardSizeSelect = document.getElementById('cardSize');
+const cardLayoutSelect = document.getElementById('cardLayout');
 const targetsInput = document.getElementById('targets');
 const generateButton = document.getElementById('generate');
 const createDataSheetButton = document.getElementById('createDataSheet');
@@ -272,13 +273,26 @@ function choiceOverrideKey(stimulus, choice, choiceIndex) {
   return `${stimulus}::${choiceIndex}::${choice}`;
 }
 
-async function renderCard(card, index) {
+function shouldUseChoicesTopLayout(card, { isDoubleWidth, cardLayout }) {
+  return (
+    isDoubleWidth &&
+    cardLayout === 'choices-top' &&
+    card.relationship.stimulus === 'text' &&
+    card.relationship.choice === 'picture'
+  );
+}
+
+async function renderCard(card, index, layoutOptions) {
   const wrapper = document.createElement('div');
   wrapper.className = 'card-wrapper';
 
   const cardElement = document.createElement('article');
   cardElement.className = 'instruction-card';
   cardElement.setAttribute('aria-label', `Card ${index + 1}`);
+  const useChoicesTopLayout = shouldUseChoicesTopLayout(card, layoutOptions);
+  if (useChoicesTopLayout) {
+    cardElement.classList.add('instruction-card--choices-top');
+  }
 
   const stimulusArea = document.createElement('div');
   stimulusArea.className = 'stimulus-area';
@@ -295,9 +309,15 @@ async function renderCard(card, index) {
     stimulusText.textContent = card.stimulus;
     stimulusArea.appendChild(stimulusText);
   }
+  if (useChoicesTopLayout) {
+    stimulusArea.classList.add('stimulus-area--prompt-footer');
+  }
 
   const choicesArea = document.createElement('div');
   choicesArea.className = `choices-area choices-${card.choices.length}`;
+  if (useChoicesTopLayout) {
+    choicesArea.classList.add('choices-area--answer-bank');
+  }
 
   for (const [choiceIndex, choice] of card.choices.entries()) {
     if (card.relationship.choice === 'picture') {
@@ -317,8 +337,13 @@ async function renderCard(card, index) {
     }
   }
 
-  cardElement.appendChild(stimulusArea);
-  cardElement.appendChild(choicesArea);
+  if (useChoicesTopLayout) {
+    cardElement.appendChild(choicesArea);
+    cardElement.appendChild(stimulusArea);
+  } else {
+    cardElement.appendChild(stimulusArea);
+    cardElement.appendChild(choicesArea);
+  }
   wrapper.appendChild(cardElement);
 
   // Only show the Change Picture control for cards that have a picture stimulus.
@@ -540,6 +565,7 @@ async function generateCards() {
   preview.innerHTML = '';
 
   const isDoubleWidth = cardSizeSelect.value === 'double-width';
+  const cardLayout = cardLayoutSelect.value;
   const cardsPerPage = isDoubleWidth ? 3 : 6;
   const pages = chunkCards(cards, cardsPerPage);
   for (const pageCards of pages) {
@@ -552,7 +578,7 @@ async function generateCards() {
     }
 
     for (const [index, card] of pageCards.entries()) {
-      grid.appendChild(await renderCard(card, index));
+      grid.appendChild(await renderCard(card, index, { isDoubleWidth, cardLayout }));
     }
 
     page.appendChild(grid);
