@@ -2,6 +2,7 @@ import { RELATIONSHIPS, buildCardSet, parseTargetLines } from './logic.js';
 
 const relationshipSelect = document.getElementById('relationship');
 const arraySizeSelect = document.getElementById('arraySize');
+const cardSizeSelect = document.getElementById('cardSize');
 const targetsInput = document.getElementById('targets');
 const generateButton = document.getElementById('generate');
 const createDataSheetButton = document.getElementById('createDataSheet');
@@ -538,12 +539,17 @@ async function generateCards() {
 
   preview.innerHTML = '';
 
-  const pages = chunkCards(cards, 6);
+  const isDoubleWidth = cardSizeSelect.value === 'double-width';
+  const cardsPerPage = isDoubleWidth ? 3 : 6;
+  const pages = chunkCards(cards, cardsPerPage);
   for (const pageCards of pages) {
     const page = document.createElement('section');
     page.className = 'print-page';
     const grid = document.createElement('div');
     grid.className = 'cards-grid';
+    if (isDoubleWidth) {
+      grid.classList.add('cards-grid--double-width');
+    }
 
     for (const [index, card] of pageCards.entries()) {
       grid.appendChild(await renderCard(card, index));
