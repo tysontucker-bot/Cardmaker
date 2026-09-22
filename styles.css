@@ -186,6 +186,10 @@ button:last-child {
   min-width: 0;
 }
 
+.instruction-card--letter-letter .choice-item {
+  font-size: 2.2rem;
+}
+
 .click-change-target {
   cursor: pointer;
 }
