@@ -103,6 +103,10 @@ button:last-child {
   gap: 0.2in;
 }
 
+.cards-grid.cards-grid--double-width {
+  grid-template-columns: 1fr;
+}
+
 .instruction-card {
   border: 4px solid var(--border);
   border-radius: 18px;
@@ -574,6 +578,10 @@ button:last-child {
     height: 100%;
     margin: 0;
     box-sizing: border-box;
+  }
+
+  .cards-grid.cards-grid--double-width > * {
+    grid-column: span 2;
   }
 
   .instruction-card {

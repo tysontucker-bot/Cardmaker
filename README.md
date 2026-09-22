@@ -22,6 +22,7 @@ npm test
 1. Select an instructional matching relationship.
 2. Enter target items (one per line, optional `stimulus -> response` pairs).
 3. Select array size (2-5).
-4. Configure distractor constraints.
-5. Generate cards and preview all pages.
-6. Print / Save as PDF with US Letter 3×3 card pages.
+4. Select card size (standard or large two-across).
+5. Configure distractor constraints.
+6. Generate cards and preview all pages.
+7. Print / Save as PDF with US Letter card pages.
