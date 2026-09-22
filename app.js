@@ -293,6 +293,9 @@ async function renderCard(card, index, layoutOptions) {
   if (useChoicesTopLayout) {
     cardElement.classList.add('instruction-card--choices-top');
   }
+  if (layoutOptions.isDoubleWidth && card.relationship.id === 'letter-letter') {
+    cardElement.classList.add('instruction-card--large-letter-letter');
+  }
 
   const stimulusArea = document.createElement('div');
   stimulusArea.className = 'stimulus-area';

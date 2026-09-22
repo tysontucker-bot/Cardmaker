@@ -239,6 +239,14 @@ button:last-child {
   height: 78px;
 }
 
+.cards-grid.cards-grid--double-width .instruction-card--large-letter-letter .stimulus-text {
+  font-size: 6rem;
+}
+
+.cards-grid.cards-grid--double-width .instruction-card--large-letter-letter .choice-item {
+  font-size: 1.65rem;
+}
+
 .instruction-card--choices-top .picture-box.small img,
 .cards-grid.cards-grid--double-width .instruction-card--choices-top .picture-box.small img {
   width: 90%;
