@@ -293,6 +293,9 @@ async function renderCard(card, index, layoutOptions) {
   if (useChoicesTopLayout) {
     cardElement.classList.add('instruction-card--choices-top');
   }
+  if (card.relationship.id === 'letter-letter') {
+    cardElement.classList.add('instruction-card--letter-letter');
+  }
   if (layoutOptions.isDoubleWidth && card.relationship.id === 'letter-letter') {
     cardElement.classList.add('instruction-card--large-letter-letter');
   }
