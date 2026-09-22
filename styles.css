@@ -208,6 +208,11 @@ button:last-child {
   height: 52px;
 }
 
+.cards-grid.cards-grid--double-width .picture-box.small img {
+  width: 104px;
+  height: 104px;
+}
+
 .picture-fallback {
   border: 2px dashed #9ca3af;
   border-radius: 8px;
