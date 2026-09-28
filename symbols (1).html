@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Symbol Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#EDF1F6;--surface:#fff;--ink:#14203A;--muted:#566178;--line:#D2D9E4;--accent:#2446A8;--on-accent:#fff;--warn:#9A6100;--err:#BA3931;
+  --font:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1422;--surface:#172035;--ink:#E6ECF6;--muted:#9BA6BA;--line:#2A3550;--accent:#8AA6FF;--on-accent:#0E1422;--warn:#E9AE45;--err:#F27A72;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.45}
+main{max-width:880px;margin:0 auto;padding:20px 16px 120px}
+h1{font-size:1.7rem;margin:0 0 4px}h2{font-size:1.2rem;margin:0 0 6px}p{margin:0}
+.lead{color:var(--muted);margin-bottom:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field>span{font-weight:700;font-size:.95rem}
+input[type=text],input[type=password],textarea,select{width:100%;min-height:44px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+textarea{resize:vertical}
+.hint{color:var(--muted);font-size:.92rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}
+button{font:inherit;cursor:pointer}
+.primary,.secondary,.ghost{min-height:44px;padding:0 16px;border-radius:10px;font-weight:700;border:2px solid transparent}
+.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.secondary{background:transparent;color:var(--accent);border-color:var(--accent)}
+.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.45;cursor:default}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.word{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.word-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.word-head h3{margin:0;font-size:1.2rem}
+.word-head .st{color:var(--muted);font-size:.9rem;margin-right:auto}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.thumb{background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#14203A;font-size:.72rem;min-width:0}
+.thumb img{width:72px;height:72px;object-fit:contain}
+.thumb span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thumb.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.skip{font-size:.9rem;min-height:36px;padding:0 12px}
+.word.skipped .thumbs{opacity:.4}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:880px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .count{margin-right:auto;font-weight:700}
+.msg{border-left:4px solid var(--warn);background:var(--surface);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.msg.err{border-left-color:var(--err)}
+details summary{cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <h1>Symbol Finder</h1>
+  <p class="lead">Find ARASAAC pictograms for a word list, pick the ones you want, and download them as one zip file. Upload that zip to the Symbol library in Group ITT Log.</p>
+
+
+  <section class="panel">
+    <label class="field"><span>Words, one per line</span><textarea id="words" rows="7" placeholder="cat&#10;dog&#10;pig&#10;cup"></textarea></label>
+    <p class="hint" style="margin:-6px 0 14px">You can paste a card set’s items. Pairs like dog -> puppy search for both words.</p>
+    <div class="grid2" style="max-width:260px">
+      <label class="field"><span>Results per word</span><select id="limit"><option>6</option><option selected>12</option><option>24</option></select></label>
+    </div>
+    <div class="row"><button type="button" class="primary" id="find">Find symbols</button><span class="hint" id="findStatus" aria-live="polite"></span></div>
+  </section>
+
+  <div id="msg"></div>
+  <div id="results"></div>
+  <p class="hint">Pictograms by Sergio Palao, property of the Government of Aragón, from <a href="https://arasaac.org" target="_blank" rel="noopener">ARASAAC</a>, shared under CC BY-NC-SA.</p>
+</main>
+<div class="bar" id="bar" hidden><div class="in"><span class="count" id="count"></span><button type="button" class="primary" id="dl">Download zip</button></div></div>
+
+<script>
+(function(){
+'use strict';
+var API='https://api.arasaac.org/api';
+var CREDIT='ARASAAC (Sergio Palao, Government of Arag\u00f3n), CC BY-NC-SA';
+var $=function(s){return document.querySelector(s);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+var state={words:[]};           // [{word, results:[{id,label,url,setId,fmt}], pick:index|-1, status}]
+
+$('#words').value=ls('gs_words')||'';
+$('#words').addEventListener('input',function(){ls('gs_words',this.value);});
+
+function parseWords(text){
+  var seen={},out=[];
+  String(text||'').split(/\r?\n/).forEach(function(line){
+    line.split(/->|=>|\|/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(w){
+      var k=w.toLowerCase(); if(!seen[k]){seen[k]=1;out.push(w);}
+    });
+  });
+  return out.slice(0,100);
+}
+async function search(word){
+  var r=await fetch(API+'/pictograms/en/search/'+encodeURIComponent(word));
+  if(r.status===404) return [];
+  if(r.status===429) throw {code:'rate'};
+  if(!r.ok) throw {code:'http',status:r.status};
+  var data=await r.json();
+  return (Array.isArray(data)?data:[]).slice(0,+$('#limit').value).map(function(x){
+    var id=x._id; if(id==null) return null;
+    var kw=(x.keywords&&x.keywords[0]&&x.keywords[0].keyword)||word;
+    return {id:id,label:kw,url:'https://static.arasaac.org/pictograms/'+id+'/'+id+'_500.png',alt:API+'/pictograms/'+id+'?resolution=500&download=false'};
+  }).filter(Boolean);
+}
+function showMsg(html,err){$('#msg').innerHTML=html?'<div class="msg'+(err?' err':'')+'">'+html+'</div>':'';}
+async function find(){
+  var words=parseWords($('#words').value);
+  if(!words.length){$('#words').focus();return;}
+  showMsg('');
+  $('#find').disabled=true;
+  state.words=words.map(function(w){return {word:w,results:[],pick:-1,status:'Searching\u2026'};});
+  render();
+  var stop=false;
+  for(var i=0;i<state.words.length&&!stop;i++){
+    var it=state.words[i];
+    $('#findStatus').textContent='Searching '+(i+1)+' of '+state.words.length+'\u2026';
+    try{
+      it.results=await search(it.word);
+      it.pick=it.results.length?0:-1;
+      it.status=it.results.length?'':'No symbols found';
+    }catch(e){
+      it.status='Search failed';
+      if(e&&e.code==='rate'){showMsg('ARASAAC is limiting requests right now. Wait a minute, then tap Find symbols again.',true);stop=true;}
+      else if(e instanceof TypeError){showMsg('Your browser couldn\u2019t reach ARASAAC. Check your connection. If you opened this file straight from your computer, open it from your GitHub Pages site instead.',true);stop=true;}
+    }
+    renderWord(i);
+  }
+  $('#findStatus').textContent='';
+  $('#find').disabled=false;
+  updateBar();
+}
+function wordHtml(it,i){
+  var body=it.results.length
+    ?'<div class="thumbs">'+it.results.map(function(r,j){return '<button type="button" class="thumb'+(it.pick===j?' on':'')+'" data-w="'+i+'" data-r="'+j+'" aria-pressed="'+(it.pick===j)+'" title="'+esc(r.label)+'"><img src="'+esc(r.url)+'" alt="'+esc(r.label)+'" loading="lazy"><span>'+esc(r.label)+'</span></button>';}).join('')+'</div>'
+    :'';
+  return '<div class="word'+(it.pick<0&&it.results.length?' skipped':'')+'" id="w'+i+'"><div class="word-head"><h3>'+esc(it.word)+'</h3><span class="st">'+esc(it.status||(it.pick<0?'Skipped':''))+'</span>'+
+    (it.results.length?'<button type="button" class="ghost skip" data-skip="'+i+'">'+(it.pick<0?'Use first result':'Skip this word')+'</button>':'')+'</div>'+body+'</div>';
+}
+function render(){$('#results').innerHTML=state.words.map(wordHtml).join('');updateBar();}
+function renderWord(i){var el=$('#w'+i);if(el)el.outerHTML=wordHtml(state.words[i],i);}
+function picked(){return state.words.filter(function(w){return w.pick>=0;});}
+function updateBar(){var n=picked().length;$('#bar').hidden=!state.words.length;$('#count').textContent=n+' symbol'+(n===1?'':'s')+' picked';$('#dl').disabled=!n;}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('.thumb');
+  if(t){var i=+t.dataset.w,j=+t.dataset.r;state.words[i].pick=j;renderWord(i);updateBar();return;}
+  var s=e.target.closest('[data-skip]');
+  if(s){var k=+s.dataset.skip,it=state.words[k];it.pick=it.pick<0?0:-1;renderWord(k);updateBar();}
+});
+$('#find').addEventListener('click',find);
+
+function extFor(r,type){
+  if(/svg/.test(type)||/\.svg(\?|$)/i.test(r.url)) return 'svg';
+  if(/jpe?g/.test(type)||/\.jpe?g(\?|$)/i.test(r.url)) return 'jpg';
+  if(/gif/.test(type)) return 'gif';
+  if(/webp/.test(type)) return 'webp';
+  return 'png';
+}
+function safeName(w){return w.toLowerCase().replace(/[\/\\:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()||'symbol';}
+$('#dl').addEventListener('click',async function(){
+  var list=picked(); if(!list.length) return;
+  var btn=this; btn.disabled=true;
+  var zip=new JSZip(), manifest={source:'ARASAAC',files:[]}, failed=[], used={};
+  for(var i=0;i<list.length;i++){
+    var it=list[i], r=it.results[it.pick];
+    btn.textContent='Downloading '+(i+1)+' of '+list.length+'\u2026';
+    try{
+      var res=null;
+      try{ res=await fetch(r.url); if(!res.ok) res=null; }catch(e1){ res=null; }
+      if(!res){ res=await fetch(r.alt); if(!res.ok) throw 0; }
+      var blob=await res.blob(), ext=extFor(r,blob.type||'');
+      var base=safeName(it.word), name=base+'.'+ext, n=2;
+      while(used[name]){name=base+' '+(n++)+'.'+ext;} used[name]=1;
+      zip.file(name,blob);
+      manifest.files.push({file:name,label:it.word,credit:CREDIT,arasaacId:r.id});
+    }catch(e){failed.push(it.word);}
+  }
+  btn.textContent='Download zip';
+  if(!manifest.files.length){
+    showMsg('The pictures couldn\u2019t be downloaded. Your browser may be blocking downloads from ARASAAC. Try again in Chrome or Edge on a computer.',true);
+    btn.disabled=false; return;
+  }
+  zip.file('manifest.json',JSON.stringify(manifest,null,2));
+  var out=await zip.generateAsync({type:'blob'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(out); a.download='arasaac-symbols.zip'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+  showMsg('Downloaded '+manifest.files.length+' symbol'+(manifest.files.length===1?'':'s')+'. In Group ITT Log, go to Cards, then Symbol library, and choose this zip file.'+(failed.length?' Couldn\u2019t download: '+esc(failed.join(', '))+'.':''));
+  btn.disabled=false;
+});
+})();
+</script>
+</body>
+</html>
