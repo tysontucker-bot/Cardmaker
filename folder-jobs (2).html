@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Folder Jobs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --manila:#E9D7A5; --manila-2:#F3E7C4; --kraft:#8A6A3B; --ink:#1F2A44; --paper:#FFFDF7; --teal:#2F7F86;
+  --bg:#EFE4C6; --panel:#FFFDF7; --text:#1F2A44; --muted:#5B6275; --line:#D6C69A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1E2230; --panel:#2A2F40; --text:#F1EBDA; --muted:#B9B3A2; --line:#4A4F62; --manila-2:#3A3A35;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1E2230; --panel:#2A2F40; --text:#F1EBDA; --muted:#B9B3A2; --line:#4A4F62; --manila-2:#3A3A35;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--text);font-family:Lexend,"Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+
+.app{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+header.top{display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.tabmark{background:var(--manila);color:var(--ink);border:2px solid var(--kraft);border-bottom:none;border-radius:12px 12px 0 0;padding:6px 18px 4px;font-weight:700;font-size:26px;letter-spacing:.2px}
+.back{color:var(--text);font-weight:500;margin-bottom:8px}
+img[data-k]{cursor:pointer}
+@media print{img[data-k]{cursor:auto}}
+header.top p{margin:0 0 6px;color:var(--muted);max-width:60ch}
+
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:4px 14px 14px 14px;padding:18px}
+.goals{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.goals button{border:2px solid var(--line);background:transparent;border-radius:10px 10px 4px 4px;padding:8px 14px;cursor:pointer;font-weight:500}
+.goals button[aria-pressed="true"]{background:var(--manila);color:var(--ink);border-color:var(--kraft)}
+.fields{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+label.f{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:15px}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{background:var(--paper);color:#1F2A44;border:2px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:86px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;font-size:14px}
+.chips input{accent-color:var(--teal)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+.check{display:inline-flex;gap:8px;align-items:center;font-size:15px}
+.check input{accent-color:var(--teal);width:18px;height:18px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{border:2px solid var(--ink);background:var(--paper);color:#1F2A44;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
+.note{font-size:14px;color:var(--muted);margin:10px 0 0}
+.hidden{display:none!important}
+.msg{margin-top:10px;font-size:14px;color:#9B2C2C}
+
+#out{margin-top:26px;display:flex;flex-direction:column;gap:28px}
+.empty{border:2px dashed var(--line);border-radius:14px;padding:30px;text-align:center;color:var(--muted)}
+.fset-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.fset-head h2{margin:0;font-size:20px}
+.fset-head .swatch{width:26px;height:26px;border-radius:6px;border:2px solid var(--ink)}
+.sheets{display:flex;flex-direction:column;gap:16px;overflow-x:auto}
+.sheet-wrap{width:max-content;max-width:100%}
+.sheet-label{font-size:13px;color:var(--muted);margin:0 0 4px}
+
+/* ---------- printable sheets ---------- */
+.sheet{
+  width:10.5in;height:8in;background:#fff;color:#111;position:relative;
+  font-family:Andika,"Comic Sans MS","Trebuchet MS",sans-serif;
+  zoom:var(--z,1);box-shadow:0 2px 0 rgba(0,0,0,.15);
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:hidden;
+}
+.band{position:absolute;inset:0;background-repeat:repeat}
+.inner{position:absolute;inset:.32in;background:#fff;border-radius:.18in;display:flex;border:.03in solid var(--c)}
+.half{flex:1;padding:.2in;display:flex;flex-direction:column;gap:.14in;min-width:0}
+.gutter{width:.5in;border-left:.02in dashed #bbb;border-right:none;position:relative}
+.gutter::after{content:"fold";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-90deg);font-size:.12in;color:#aaa;font-family:Lexend,sans-serif}
+.ftab{display:flex;align-items:center;gap:.1in;background:var(--l);border:.03in solid var(--c);border-radius:.14in .14in .04in .04in;padding:.06in .14in;width:max-content;max-width:100%}
+.ftab svg{width:.34in;height:.34in;flex:none}
+.ftab b{font-size:.22in;color:var(--d)}
+.ftitle{font-size:.32in;font-weight:700;line-height:1.1;margin:0;color:var(--d)}
+.finstr{font-size:.19in;margin:0;color:#333;line-height:1.25}
+.grid{display:grid;gap:.16in;justify-content:center;align-content:start}
+.box{border:.025in solid var(--c);border-radius:.1in;background:var(--l);display:flex;align-items:center;justify-content:center;position:relative;text-align:center}
+.box .dot,.spot .dot{width:.28in;height:.28in;border-radius:50%;border:.02in dashed var(--d);opacity:.55;position:absolute}
+.box .num{position:absolute;top:.03in;left:.07in;font-size:.15in;color:var(--d);font-weight:700}
+.box .ghost{font-weight:700;color:#222;line-height:1;padding:0 .06in;position:relative;z-index:1}
+.prob{display:flex;align-items:center;gap:.12in;font-size:.36in;font-weight:700;justify-content:center}
+.prob .pn{font-size:.16in;color:var(--d);width:.24in;text-align:right}
+.bigpic{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.04in;flex:1}
+.bigpic .pic{font-size:1.9in;line-height:1}
+.bigpic .pic img{width:2.1in;height:2.1in;object-fit:contain}
+.bigpic .cap{font-size:.34in;font-weight:700}
+.sentence{display:flex;flex-wrap:wrap;align-items:center;gap:.1in .12in;font-size:.36in;font-weight:700;line-height:1.2}
+.spot{border:.02in dashed var(--c);border-radius:.08in;position:relative;display:flex;align-items:center;justify-content:center}
+.zone-label{font-size:.17in;color:var(--d);font-weight:700;margin:0}
+.want{display:flex;align-items:center;justify-content:center;gap:.16in;font-size:.44in;font-weight:700;flex-wrap:wrap}
+.corner-sym{position:absolute;top:.1in;right:.12in;width:.42in;height:.42in}
+
+/* pieces */
+.pieces .inner{display:block;padding:.2in}
+.pieces .phead{display:flex;align-items:center;gap:.14in;margin-bottom:.14in}
+.pieces .phead p{margin:0;font-size:.17in;color:#444}
+.cutgrid{display:flex;flex-wrap:wrap;gap:0;align-content:flex-start}
+.cut{border:.012in dashed #888;padding:.07in}
+.card{position:relative;border-radius:.08in;background-repeat:repeat;padding:.08in;display:flex}
+.card .face{background:#fff;border-radius:.05in;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;text-align:center}
+.card .face .sym{position:absolute;top:.03in;left:.04in;width:.2in;height:.2in}
+.card .w{font-weight:700;color:#111;line-height:1;padding:0 .08in}
+.card .p{font-size:.9in;line-height:1}
+.card .p img{width:1.05in;height:1.05in;object-fit:contain}
+.card .lab{font-size:.2in;font-weight:700;margin-top:.03in}
+
+/* data sheet */
+.data .inner{display:block;padding:.24in;border-color:#999}
+.data h3{margin:0 0 .04in;font-size:.28in}
+.data .crit{margin:0 0 .12in;font-size:.16in;color:#333}
+.data table{border-collapse:collapse;width:100%;font-family:Lexend,sans-serif;font-size:.14in}
+.data th,.data td{border:.012in solid #777;padding:.04in .06in;text-align:center;height:.3in}
+.data th{background:var(--l)}
+.data td.l{text-align:left;font-weight:500}
+.data .two{display:flex;gap:.24in}
+.data .key{font-size:.16in;line-height:1.5;columns:2;margin:0;padding-left:.2in}
+.attrib{position:absolute;bottom:.08in;left:.4in;font-size:.1in;color:#666;font-family:Lexend,sans-serif}
+
+@media print{
+  @page{size:letter landscape;margin:.25in}
+  body{background:#fff}
+  .app>header,.panel,.fset-head,.sheet-label,.empty{display:none!important}
+  .app{padding:0;max-width:none}
+  #out{margin:0;gap:0;display:block}
+  .sheets{display:block;overflow:visible}
+  .sheet-wrap{width:auto;max-width:none}
+  .sheet{zoom:1!important;box-shadow:none;page-break-after:always;break-after:page}
+  .no-data .data{display:none}
+}
+@media (prefers-reduced-motion:no-preference){
+  .sheet-wrap{animation:drop .35s ease-out both}
+  @keyframes drop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="tabmark">Folder Jobs</div><a class="back" href="./index.html">Back to Cardmaker</a> <a class="back" href="./symbols.html">Symbol Finder</a>
+    <p>Pick a goal, fill in your content or let it autogenerate, and print. Every folder gets its own colors, border pattern, symbol, and name, and its pieces match it.</p>
+  </header>
+
+  <section class="panel" aria-label="Folder settings">
+    <div class="goals" role="group" aria-label="Goal">
+      <button data-goal="sight" aria-pressed="true">Sight words</button>
+      <button data-goal="math" aria-pressed="false">Math within 50</button>
+      <button data-goal="cloze" aria-pressed="false">Opinion cloze</button>
+      <button data-goal="scramble" aria-pressed="false">Unscramble sentence</button>
+      <button data-goal="request" aria-pressed="false">Request board</button>
+    </div>
+
+    <!-- SIGHT -->
+    <div class="fields" data-for="sight">
+      <label class="f">Sight words <small>Up to 10, separated by commas or new lines</small>
+        <textarea id="sWords" placeholder="the, and, see, my, can"></textarea></label>
+      <label class="f">Folder style
+        <select id="sMode">
+          <option value="match">Match the same word (words printed in boxes)</option>
+          <option value="say">Find the word I say (numbered empty boxes)</option>
+          <option value="picture">Match word to picture</option>
+        </select>
+        <small id="sHint">Autogenerate picks from Dolch pre-primer and primer words.</small></label>
+      <label class="f">Words when autogenerating
+        <input type="number" id="sCount" min="3" max="10" value="10"></label>
+    </div>
+
+    <!-- MATH -->
+    <div class="fields hidden" data-for="math">
+      <label class="f">Problem type
+        <select id="mOp">
+          <option value="mixed">Mixed addition and subtraction</option>
+          <option value="add">Addition only</option>
+          <option value="sub">Subtraction only</option>
+        </select></label>
+      <label class="f">Extra answer cards (distractors)
+        <select id="mDist"><option value="0">None</option><option value="2">2</option><option value="3">3</option></select></label>
+      <label class="f">My own problems <small>Optional. One per line, like 23+14 or 40-17. Leave blank to autogenerate.</small>
+        <textarea id="mOwn" placeholder="23+14&#10;40-17"></textarea></label>
+    </div>
+
+    <!-- CLOZE / SCRAMBLE -->
+    <div class="fields hidden" data-for="topic">
+      <label class="f">Familiar topic
+        <select id="tPick"></select></label>
+      <label class="f" data-scramble-only>Opinion in the sentence
+        <select id="tOpinion"><option value="like">like</option><option value="don't like">don't like</option></select></label>
+      <label class="f" data-scramble-only>Describing word in the sentence
+        <select id="tDesc"></select></label>
+      <div class="f hidden" id="tCustom" style="display:contents">
+        <label class="f">Topic word <input type="text" id="cTopic" placeholder="the playground"></label>
+        <label class="f">Picture <small>An emoji, or a word to search ARASAAC</small><input type="text" id="cPic" placeholder="🛝"></label>
+        <label class="f">Sentence uses
+          <select id="cPron"><option value="it is">it is</option><option value="they are">they are</option></select></label>
+        <label class="f">Describing words that fit <small>Comma separated</small><input type="text" id="cFit" placeholder="fun, big"></label>
+        <label class="f">Describing distractors <small>At least 2</small><input type="text" id="cOff" placeholder="sticky, salty"></label>
+      </div>
+    </div>
+
+    <!-- REQUEST -->
+    <div class="fields hidden" data-for="request">
+      <div class="f">Choices on the board <small>Pick up to 6. Autogenerate picks 4 to 6.</small>
+        <div class="chips" id="rChips"></div></div>
+      <label class="f">Add your own <small>Comma separated, like "the swing, my fidget"</small>
+        <input type="text" id="rOwn" placeholder="the swing"></label>
+    </div>
+
+    <div class="row">
+      <label class="check">How many folders
+        <select id="count" style="width:auto"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+      <label class="check"><input type="checkbox" id="withData" checked> Include data sheet</label>
+      <label class="check"><input type="checkbox" id="useAra" checked> Use ARASAAC pictures</label>
+    </div>
+    <p class="note">Tap any picture in the preview to swap it for a different ARASAAC symbol. The folder and its pieces always change together.</p>
+
+    <div class="actions">
+      <button class="btn primary" id="autoBtn">✨ Autogenerate</button>
+      <button class="btn" id="makeBtn">Make with my content</button>
+      <button class="btn ghost" id="printBtn">🖨 Print all</button>
+    </div>
+    <div class="msg" id="msg" role="status"></div>
+  </section>
+
+  <main id="out" aria-live="polite">
+    <div class="empty">Your folders will show up here. Print on letter paper, landscape, with background graphics turned on.</div>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------------- data banks ---------------- */
+const DOLCH = "a and away big blue can come down find for funny go help here I in is it jump little look make me my not one play red run said see the three to two up we where yellow you all am are at ate be black brown but came did do eat four get good have he into like must new no now on our out please pretty ran ride saw say she so soon that there they this too under want was well went what white who will with yes".split(" ");
+const PICT = {jump:"🦘",run:"🏃",play:"🧸",eat:"🍽️",ride:"🚲",see:"👀",look:"🔍",help:"🙋",go:"🟢",come:"👋",sleep:"😴",sit:"🪑",walk:"🚶",
+  red:"🟥",blue:"🟦",yellow:"🟨",black:"⬛",white:"⬜",brown:"🟫",green:"🟩",one:"1️⃣",two:"2️⃣",three:"3️⃣",four:"4️⃣",five:"5️⃣",big:"🐘",little:"🐭",
+  apple:"🍎",baby:"👶",ball:"⚽",bear:"🐻",bed:"🛏️",bell:"🔔",bird:"🐦",boat:"⛵",box:"📦",boy:"👦",bread:"🍞",cake:"🎂",car:"🚗",cat:"🐱",chair:"🪑",
+  chicken:"🐔",coat:"🧥",cow:"🐄",dog:"🐶",door:"🚪",duck:"🦆",egg:"🥚",eye:"👁️",fish:"🐟",flower:"🌸",girl:"👧",hand:"✋",horse:"🐴",house:"🏠",
+  milk:"🥛",pig:"🐷",rabbit:"🐰",rain:"🌧️",ring:"💍",school:"🏫",sheep:"🐑",shoe:"👟",snow:"❄️",sun:"☀️",table:"🍽️",toy:"🧸",tree:"🌳",water:"💧",window:"🪟"};
+const TOPICS = [
+  {t:"pizza",pic:"🍕",k:"pizza",pron:"it is",fit:["cheesy","yummy","hot"],off:["furry","loud","sour"]},
+  {t:"recess",pic:"🛝",k:"playground",pron:"it is",fit:["fun","exciting"],off:["sticky","salty","furry"]},
+  {t:"dogs",pic:"🐶",k:"dog",pron:"they are",fit:["fluffy","friendly","cute"],off:["crunchy","sour","sticky"]},
+  {t:"ice cream",pic:"🍦",k:"ice cream",pron:"it is",fit:["cold","sweet","creamy"],off:["spicy","loud","furry"]},
+  {t:"music",pic:"🎵",k:"music",pron:"it is",fit:["fun","happy","loud"],off:["sticky","furry","salty"]},
+  {t:"swimming",pic:"🏊",k:"swim",pron:"it is",fit:["fun","cool","wet"],off:["dry","crunchy","furry"]},
+  {t:"video games",pic:"🎮",k:"video game",pron:"they are",fit:["fun","exciting"],off:["juicy","furry","salty"]},
+  {t:"apples",pic:"🍎",k:"apple",pron:"they are",fit:["crunchy","sweet","juicy"],off:["furry","loud","spicy"]},
+  {t:"the park",pic:"🌳",k:"park",pron:"it is",fit:["fun","big","green"],off:["sticky","salty","sour"]},
+  {t:"cats",pic:"🐱",k:"cat",pron:"they are",fit:["soft","cute","fluffy"],off:["crunchy","salty","spicy"]},
+  {t:"trains",pic:"🚂",k:"train",pron:"they are",fit:["fast","big","loud"],off:["soft","juicy","sweet"]},
+  {t:"cookies",pic:"🍪",k:"cookie",pron:"they are",fit:["sweet","crunchy","yummy"],off:["furry","loud","wet"]},
+  {t:"books",pic:"📚",k:"book",pron:"they are",fit:["fun","interesting"],off:["juicy","furry","spicy"]},
+  {t:"tacos",pic:"🌮",k:"taco",pron:"they are",fit:["crunchy","yummy","spicy"],off:["furry","loud","soft"]},
+  {t:"the beach",pic:"🏖️",k:"beach",pron:"it is",fit:["sunny","fun","sandy"],off:["sticky","crunchy","furry"]},
+  {t:"bubbles",pic:"🫧",k:"bubbles",pron:"they are",fit:["fun","shiny","round"],off:["crunchy","salty","furry"]}
+];
+const REQUESTS = [
+  {t:"a break",pic:"⏸️",k:"rest"},{t:"a walk",pic:"🚶",k:"walk"},{t:"to talk",pic:"💬",k:"talk"},
+  {t:"to stretch",pic:"🙆",k:"stretch"},{t:"to jump",pic:"🦘",k:"jump"},{t:"a drink",pic:"💧",k:"drink water"},
+  {t:"quiet time",pic:"🤫",k:"silence"},{t:"to play",pic:"🧸",k:"play"},{t:"help",pic:"🙋",k:"help"},
+  {t:"to move",pic:"🏃",k:"run"}
+];
+const ADJ = "Brave Sunny Rocket Cozy Zippy Lucky Mighty Jolly Swift Bright Bouncy Clever Sparkly Happy Speedy Giant Tiny Silly Golden Cosmic".split(" ");
+const NOUN = "Otter Comet Fox Panda Falcon Turtle Maple Pebble Tiger Koala Rocket Cactus Dolphin Lemon Owl Bison Gecko Puffin Moose Walrus".split(" ");
+const PATTERNS = ["dots","stripes","zigzag","waves","checks","triangles","plus","scallops","diamonds","grid"];
+const SYMBOLS = {
+  Star:'<path d="M12 2l3 6.5 7 .8-5.2 4.8 1.4 7L12 17.6 5.8 21.1l1.4-7L2 9.3l7-.8z"/>',
+  Heart:'<path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/>',
+  Moon:'<path d="M15 3a9 9 0 1 0 6 15 7 7 0 0 1-6-15z"/>',
+  Diamond:'<path d="M12 2l9 10-9 10-9-10z"/>',
+  Triangle:'<path d="M12 3l10 18H2z"/>',
+  Circle:'<circle cx="12" cy="12" r="9.5"/>',
+  Hexagon:'<path d="M7 3h10l5 9-5 9H7l-5-9z"/>',
+  Bolt:'<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>',
+  Square:'<rect x="3" y="3" width="18" height="18" rx="2"/>',
+  Cloud:'<path d="M7 19a5 5 0 0 1-.5-10A6 6 0 0 1 18 8a4.5 4.5 0 0 1-.5 11z"/>',
+  Cross:'<path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/>',
+  Drop:'<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13z"/>'
+};
+const GOAL_INFO = {
+  sight:{name:"Sight Words",crit:"Reads targeted sight words (set of 10 or fewer) with 80% accuracy across a minimum of 10 targeted sessions."},
+  math:{name:"Math Within 50",crit:"Solves 10 addition/subtraction problems within 50 with a calculator and no more than 2 verbal prompts per set, 80% accuracy in 4 of 5 opportunities."},
+  cloze:{name:"My Opinion",crit:"Obj. 1: Completes a cloze opinion sentence on a familiar topic with at least 2 descriptive distractors, 100% accuracy in 4 of 5 targeted sessions."},
+  scramble:{name:"Build My Sentence",crit:"Obj. 2: Unscrambles and sequences the words of his cloze sentence, 100% accuracy in 4 of 5 targeted sessions."},
+  request:{name:"I Want",crit:"Requests interactions or movement choices throughout the day in 75% of opportunities across 5 days."}
+};
+
+/* ---------------- helpers ---------------- */
+const $ = s=>document.querySelector(s);
+const rnd = n=>Math.floor(Math.random()*n);
+const pick = a=>a[rnd(a.length)];
+const shuffle = a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const splitList = s=>s.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
+function fit(text,widthIn,baseIn){ // font size in inches so text fits
+  const est=Math.max(1,String(text).length)*0.56;
+  return Math.min(baseIn,(widthIn-.16)/est).toFixed(3)+"in";
+}
+function hsl(h,s,l){return `hsl(${Math.round(h)} ${s}% ${l}%)`}
+
+/* ---------------- themes ---------------- */
+let lastHue = Math.random()*360;
+function makeThemes(n){
+  const pats=shuffle(PATTERNS), syms=shuffle(Object.keys(SYMBOLS));
+  const out=[]; const used=new Set();
+  for(let i=0;i<n;i++){
+    lastHue=(lastHue+137.5+rnd(30))%360;
+    let name; do{name=pick(ADJ)+" "+pick(NOUN)}while(used.has(name)); used.add(name);
+    out.push({h:lastHue,c:hsl(lastHue,62,42),d:hsl(lastHue,70,24),l:hsl(lastHue,75,93),m:hsl((lastHue+28)%360,55,72),
+      pattern:pats[i%pats.length],symbol:syms[i%syms.length],name});
+  }
+  return out;
+}
+function patternURI(type,c,m,bg,scale){
+  const s=scale||28; let g="";
+  switch(type){
+    case "dots": g=`<circle cx="7" cy="7" r="4" fill="${c}"/><circle cx="21" cy="21" r="4" fill="${m}"/>`;break;
+    case "stripes": g=`<path d="M-7 7L7-7M0 28L28 0M21 35L35 21" stroke="${c}" stroke-width="6"/><path d="M-7 21L21-7M7 35L35 7" stroke="${m}" stroke-width="3"/>`;break;
+    case "zigzag": g=`<path d="M0 10l7-7 7 7 7-7 7 7M0 24l7-7 7 7 7-7 7 7" fill="none" stroke="${c}" stroke-width="3.5"/>`;break;
+    case "waves": g=`<path d="M0 8q7-7 14 0t14 0M0 22q7-7 14 0t14 0" fill="none" stroke="${c}" stroke-width="3.5"/><path d="M0 15q7-5 14 0t14 0" fill="none" stroke="${m}" stroke-width="2"/>`;break;
+    case "checks": g=`<rect width="14" height="14" fill="${c}"/><rect x="14" y="14" width="14" height="14" fill="${c}"/><rect x="14" width="14" height="14" fill="${m}"/>`;break;
+    case "triangles": g=`<path d="M0 14L7 2l7 12zM14 28l7-12 7 12z" fill="${c}"/><path d="M14 14l7-12 7 12zM0 28l7-12 7 12z" fill="${m}"/>`;break;
+    case "plus": g=`<path d="M7 2v10M2 7h10" stroke="${c}" stroke-width="3.5"/><path d="M21 16v10M16 21h10" stroke="${m}" stroke-width="3.5"/>`;break;
+    case "scallops": g=`<path d="M0 14a7 7 0 0 1 14 0a7 7 0 0 1 14 0M-7 28a7 7 0 0 1 14 0a7 7 0 0 1 14 0a7 7 0 0 1 14 0" fill="none" stroke="${c}" stroke-width="3"/>`;break;
+    case "diamonds": g=`<path d="M14 2l9 12-9 12-9-12z" fill="${c}"/><path d="M0 0l4 5-4 5M28 18l-4 5 4 5" fill="${m}"/>`;break;
+    case "grid": g=`<path d="M0 0h28M0 14h28M0 0v28M14 0v28" stroke="${c}" stroke-width="3"/><circle cx="7" cy="7" r="2.5" fill="${m}"/><circle cx="21" cy="21" r="2.5" fill="${m}"/>`;break;
+  }
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><rect width="28" height="28" fill="${bg}"/>${g}</svg>`;
+  return `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g,"%27")}')`;
+}
+function symSVG(th,cls){return `<svg class="${cls||""}" viewBox="0 0 24 24" fill="${th.c}" stroke="${th.d}" stroke-width="1.2" aria-hidden="true">${SYMBOLS[th.symbol]}</svg>`}
+function themeStyle(th){return `--c:${th.c};--d:${th.d};--l:${th.l};--m:${th.m}`}
+function bandStyle(th,scale){return `background-image:${patternURI(th.pattern,th.c,th.m,th.l)};background-size:${scale||.32}in`}
+
+/* ---------------- pictures ---------------- */
+const picCache=new Map(), picIdx=new Map(); let araFailed=false;
+async function araResults(key){
+  if(!picCache.has(key)){
+    picCache.set(key,(async()=>{
+      try{
+        const r=await fetch("https://api.arasaac.org/api/pictograms/en/search/"+encodeURIComponent(key));
+        if(r.status===404) return [];
+        if(!r.ok) throw new Error(r.status);
+        const j=await r.json(); return Array.isArray(j)?j.slice(0,12).map(x=>x._id):[];
+      }catch(e){araFailed=true; picCache.delete(key); return [];}
+    })());
+  }
+  return picCache.get(key);
+}
+async function picHTML(keyword,emoji){
+  if($("#useAra").checked && keyword){
+    const key=keyword.toLowerCase(); const ids=await araResults(key);
+    if(ids.length){
+      const id=ids[(picIdx.get(key)||0)%ids.length]; usedAra=true;
+      return `<img data-k="${esc(key)}" src="https://static.arasaac.org/pictograms/${id}/${id}_500.png" alt="${esc(keyword)}" title="Tap for a different picture">`;
+    }
+  }
+  return esc(emoji||"🖼️");
+}
+let usedAra=false;
+
+/* ---------------- content builders ---------------- */
+function mathProblems(op,n){
+  const out=[],seen=new Set();let guard=0;
+  while(out.length<n && guard++<2000){
+    const kind=op==="mixed"?(Math.random()<.5?"add":"sub"):op;
+    let a,b,ans;
+    if(kind==="add"){ans=4+rnd(47);a=1+rnd(ans-1);b=ans-a;}
+    else{a=5+rnd(46);b=1+rnd(a-1);ans=a-b;}
+    const sym=kind==="add"?"+":"−";
+    if(seen.has(ans)) continue; seen.add(ans);
+    out.push({a,b,sym,ans});
+  }
+  return out;
+}
+function parseOwnMath(text){
+  const out=[];
+  for(const line of text.split("\n")){
+    const m=line.replace(/\s/g,"").replace("−","-").match(/^(\d+)([+-])(\d+)$/);
+    if(!m) continue; const a=+m[1],b=+m[3];
+    const ans=m[2]==="+"?a+b:a-b; out.push({a,b,sym:m[2]==="+"?"+":"−",ans});
+  }
+  return out.slice(0,10);
+}
+function distractors(probs,k){
+  const ans=new Set(probs.map(p=>p.ans)),out=[];let g=0;
+  while(out.length<k && g++<500){const v=rnd(51); if(!ans.has(v)&&!out.includes(v)) out.push(v);}
+  return out;
+}
+function sentenceWords(topic,opinion,desc){
+  const words=["I",...opinion.split(" "),...topic.t.split(" "),"because",...topic.pron.split(" "),desc+"."];
+  return words;
+}
+function customTopic(){
+  const t=$("#cTopic").value.trim(); const fitW=splitList($("#cFit").value); const off=splitList($("#cOff").value);
+  if(!t||!fitW.length||off.length<2) return null;
+  const pic=$("#cPic").value.trim();
+  const isEmoji=pic && /\p{Extended_Pictographic}/u.test(pic);
+  return {t,pic:isEmoji?pic:"🖼️",k:isEmoji?t:(pic||t),pron:$("#cPron").value,fit:fitW,off};
+}
+
+/* ---------------- renderers ---------------- */
+function sheet(th,cls,inner,extra){
+  return `<div class="sheet ${cls}" style="${themeStyle(th)}"><div class="band" style="${bandStyle(th)}"></div><div class="inner">${inner}</div>${extra||""}</div>`;
+}
+function tab(th){return `<div class="ftab">${symSVG(th)}<b>${esc(th.name)}</b></div>`}
+function boxHTML(w,h,content,num){
+  return `<div class="box" style="width:${w}in;height:${h}in"><span class="dot"></span>${num?`<span class="num">${num}</span>`:""}${content||""}</div>`;
+}
+function piecesSheet(th,cards,w,h,title){
+  const cells=cards.map(c=>`<div class="cut"><div class="card" style="width:${w}in;height:${h}in;${bandStyle(th,.2)}"><div class="face">${symSVG(th,"sym")}${c}</div></div></div>`).join("");
+  return sheet(th,"pieces",`<div class="phead">${tab(th)}<p>${esc(title)}: cut on the dashed lines, laminate, and add velcro to the back of each piece.</p></div><div class="cutgrid">${cells}</div>`);
+}
+function wordCard(word,w,base){return `<span class="w" style="font-size:${fit(word,w,base)}">${esc(word)}</span>`}
+function dataSheet(th,goal,bodyHTML){
+  return sheet(th,"data",`<div style="width:100%"><div style="display:flex;align-items:center;gap:.14in;margin-bottom:.1in">${tab(th)}<h3>${esc(GOAL_INFO[goal].name)} data sheet</h3></div><p class="crit">Goal: ${esc(GOAL_INFO[goal].crit)}  Student: ______________</p>${bodyHTML}</div>`);
+}
+function sessionHeaders(n,label){let s="";for(let i=1;i<=n;i++) s+=`<th>${label} ${i}<br><span style="font-weight:400">__/__</span></th>`;return s}
+
+async function renderFolder(spec,th){
+  const g=spec.goal; const pages=[];
+  if(g==="sight" && spec.mode==="picture"){
+    const words=spec.words; const n=words.length; const leftN=Math.min(4,Math.floor(n/2));
+    const pics=await Promise.all(words.map(w=>picHTML(w,PICT[w.toLowerCase()]||"❓")));
+    pics.forEach((p,i)=>{if(p==="❓") missingPics.push(words[i])});
+    const row=i=>`<div style="display:flex;align-items:center;gap:.16in;justify-content:center"><div class="box" style="width:1.05in;height:1.05in;background:#fff"><span style="font-size:.78in;line-height:1">${pics[i].replace("<img",'<img style="width:.95in;height:.95in;object-fit:contain"')}</span></div>${boxHTML(2.1,1.0,"")}</div>`;
+    const L=words.slice(0,leftN).map((w,i)=>row(i)).join(""), R=words.slice(leftN).map((w,i)=>row(i+leftN)).join("");
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Sight Words</p><p class="finstr">Look at the picture. Find the word that goes with it. Read it out loud and stick it on.</p><div style="display:flex;flex-direction:column;gap:.1in">${L}</div></div><div class="gutter"></div><div class="half"><div style="display:flex;flex-direction:column;gap:.1in;margin-top:.05in">${R}</div></div>`)]);
+    pages.push(["Pieces",piecesSheet(th,shuffle(words).map(w=>wordCard(w,1.84,.5)),2.0,.92,"Word cards")]);
+    const rows=words.map(w=>`<tr><td class="l">${esc(w)}</td>${"<td></td>".repeat(10)}</tr>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"sight",`<table><tr><th>Word</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">Mark + read correctly, − incorrect or no response. Have him read each word aloud as he places it.</p>`)]);
+    return pages;
+  }
+  if(g==="sight"){
+    const words=spec.words; const n=words.length;
+    const leftN=Math.min(4,Math.floor(n/2)); const left=words.slice(0,leftN), right=words.slice(leftN);
+    const bw=2.0,bh=1.15;
+    const content=(w,i)=>spec.mode==="match"?`<span class="ghost" style="font-size:${fit(w,bw,.52)}">${esc(w)}</span>`:"";
+    const numFor=i=>spec.mode==="say"?String(i+1):"";
+    const L=left.map((w,i)=>boxHTML(bw,bh,content(w),numFor(i))).join("");
+    const R=right.map((w,i)=>boxHTML(bw,bh,content(w),numFor(i+leftN))).join("");
+    const instr=spec.mode==="match"?"Find the word that matches. Read it out loud and stick it on.":"Listen for the word. Find it, read it, and stick it in the box.";
+    pages.push(["Folder inside",sheet(spec.th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Sight Words</p><p class="finstr">${instr}</p><div class="grid" style="grid-template-columns:repeat(2,${bw}in)">${L}</div></div><div class="gutter"></div><div class="half"><div class="grid" style="grid-template-columns:repeat(2,${bw}in);margin-top:.1in">${R}</div></div>`)]);
+    pages.push(["Pieces",piecesSheet(th,shuffle(words).map(w=>wordCard(w,1.84,.5)),2.0,1.1,"Word cards")]);
+    const rows=words.map((w,i)=>`<tr><td class="l">${spec.mode==="say"?(i+1)+". ":""}${esc(w)}</td>${"<td></td>".repeat(10)}</tr>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"sight",`<table><tr><th>Word</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">Mark + read correctly, − incorrect or no response. ${spec.mode==="say"?"Say the words in the numbered order above.":""}</p>`)]);
+  }
+  if(g==="math"){
+    const probs=spec.probs; const half=Math.ceil(probs.length/2);
+    const row=(p,i)=>`<div class="prob"><span class="pn">${i+1}.</span><span>${p.a} ${p.sym} ${p.b} =</span>${boxHTML(1.3,.85,"")}</div>`;
+    const L=probs.slice(0,half).map((p,i)=>row(p,i)).join(""), R=probs.slice(half).map((p,i)=>row(p,i+half)).join("");
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Math Within 50</p><p class="finstr">Use your calculator. Find the answer card and stick it on.</p><div style="display:flex;flex-direction:column;gap:.16in">${L}</div></div><div class="gutter"></div><div class="half"><p class="zone-label">Verbal prompts used: ☐ ☐</p><div style="display:flex;flex-direction:column;gap:.16in">${R}</div></div>`)]);
+    const answers=shuffle([...probs.map(p=>p.ans),...spec.dist]);
+    pages.push(["Pieces",piecesSheet(th,answers.map(a=>wordCard(String(a),1.0,.42)),1.35,.8,"Answer cards")]);
+    const key=probs.map((p,i)=>`<li>${p.a} ${p.sym} ${p.b} = <b>${p.ans}</b></li>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"math",`<div class="two"><div style="flex:1"><p class="zone-label">Answer key</p><ol class="key">${key}</ol>${spec.dist.length?`<p class="crit">Distractor cards: ${spec.dist.join(", ")}</p>`:""}</div><div style="flex:1.3"><table><tr><th></th><th>Opp 1</th><th>Opp 2</th><th>Opp 3</th><th>Opp 4</th><th>Opp 5</th></tr><tr><td class="l">Date</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Correct / ${probs.length}</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Verbal prompts</td>${"<td>☐ ☐</td>".repeat(5)}</tr><tr><td class="l">80% met?</td>${"<td>Y / N</td>".repeat(5)}</tr></table></div></div>`)]);
+  }
+  if(g==="cloze"){
+    const tp=spec.topic; const pic=await picHTML(tp.k,tp.pic);
+    const descs=shuffle([...tp.fit,...tp.off.slice(0,Math.max(2,tp.off.length))]);
+    const pieces=["like","don't like",...descs];
+    const bw=1.65,bh=.8;
+    const spots=pieces.map(()=>`<div class="spot" style="width:${bw}in;height:${bh}in"><span class="dot"></span></div>`).join("");
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">My Opinion</p><p class="finstr">What do you think? Pick your words and finish the sentence.</p><div class="bigpic"><div class="pic">${pic}</div><div class="cap">${esc(tp.t)}</div></div></div><div class="gutter"></div><div class="half"><div class="sentence" style="margin-top:.2in"><span>I</span>${boxHTML(bw,bh,"")}<span>${esc(tp.t)}</span><span>because</span><span>${esc(tp.pron)}</span>${boxHTML(bw,bh,"")}<span>.</span></div><p class="zone-label" style="margin-top:auto">Word bank</p><div class="grid" style="grid-template-columns:repeat(2,${bw}in);gap:.12in">${spots}</div></div>`)]);
+    pages.push(["Pieces",piecesSheet(th,shuffle(pieces).map(w=>wordCard(w,1.5,.4)),1.6,.74,"Word cards")]);
+    pages.push(["Data sheet",dataSheet(th,"cloze",`<p class="crit">Fits the topic: <b>${tp.fit.map(esc).join(", ")}</b>. Distractors: ${tp.off.map(esc).join(", ")}. Opinion cards: like, don't like (either is correct).</p><table><tr><th></th><th>Session 1</th><th>Session 2</th><th>Session 3</th><th>Session 4</th><th>Session 5</th></tr><tr><td class="l">Date</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Opinion card placed</td>${"<td>✓ / ✗</td>".repeat(5)}</tr><tr><td class="l">Describing word fits</td>${"<td>✓ / ✗</td>".repeat(5)}</tr><tr><td class="l">100% correct?</td>${"<td>Y / N</td>".repeat(5)}</tr><tr><td class="l">Notes</td>${"<td></td>".repeat(5)}</tr></table>`)]);
+  }
+  if(g==="scramble"){
+    const tp=spec.topic; const pic=await picHTML(tp.k,tp.pic);
+    const words=sentenceWords(tp,spec.opinion,spec.desc); const n=words.length;
+    const bw=1.3,bh=.7;
+    const spots=words.map(()=>`<div class="spot" style="width:${bw}in;height:${bh}in"><span class="dot"></span></div>`).join("");
+    const boxes=words.map((w,i)=>boxHTML(bw,bh,"",String(i+1))).join("");
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Build My Sentence</p><p class="finstr">Put the words in order. Then read your sentence.</p><div class="bigpic" style="flex:none"><div class="pic" style="font-size:1.3in">${pic.includes("<img")?pic.replace("<img",'<img style="width:1.4in;height:1.4in"'):pic}</div></div><p class="zone-label">Mixed-up words</p><div class="grid" style="grid-template-columns:repeat(3,${bw}in);gap:.1in">${spots}</div></div><div class="gutter"></div><div class="half"><p class="zone-label" style="margin-top:.1in">My sentence</p><div class="grid" style="grid-template-columns:repeat(3,${bw}in);gap:.14in">${boxes}</div></div>`)]);
+    pages.push(["Pieces",piecesSheet(th,shuffle(words).map(w=>wordCard(w,1.18,.38)),1.25,.64,"Word cards")]);
+    pages.push(["Data sheet",dataSheet(th,"scramble",`<p class="crit">Correct order: <b>${words.map(esc).join(" ")}</b></p><table><tr><th></th><th>Session 1</th><th>Session 2</th><th>Session 3</th><th>Session 4</th><th>Session 5</th></tr><tr><td class="l">Date</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Words in order / ${n}</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Read sentence</td>${"<td>✓ / ✗</td>".repeat(5)}</tr><tr><td class="l">100% correct?</td>${"<td>Y / N</td>".repeat(5)}</tr><tr><td class="l">Notes</td>${"<td></td>".repeat(5)}</tr></table>`)]);
+  }
+  if(g==="request"){
+    const ch=spec.choices; const pics=await Promise.all(ch.map(c=>picHTML(c.k,c.pic)));
+    const sz=1.9;
+    const spots=ch.map(()=>`<div class="spot" style="width:${sz}in;height:${sz}in"><span class="dot"></span></div>`).join("");
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">I Want</p><p class="finstr">Pick what you need. Put it in the box and hand the card to a grown-up.</p><div class="want" style="margin-top:auto;margin-bottom:auto"><span>I want</span>${boxHTML(sz+.1,sz+.1,"")}<span>please.</span></div></div><div class="gutter"></div><div class="half"><p class="zone-label" style="margin-top:.1in">My choices</p><div class="grid" style="grid-template-columns:repeat(2,${sz}in);gap:.16in">${spots}</div></div>`)]);
+    const cards=ch.map((c,i)=>`<div class="p">${pics[i]}</div><div class="lab" style="font-size:${fit(c.t,1.7,.22)}">${esc(c.t)}</div>`);
+    pages.push(["Pieces",piecesSheet(th,cards,1.85,1.85,"Choice cards")]);
+    const rows=ch.map(c=>`<tr><td class="l">${esc(c.t)}</td>${"<td></td>".repeat(5)}</tr>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"request",`<table><tr><th></th><th>Day 1</th><th>Day 2</th><th>Day 3</th><th>Day 4</th><th>Day 5</th></tr><tr><td class="l">Date</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Opportunities</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">Requests made</td>${"<td></td>".repeat(5)}</tr><tr><td class="l">% (goal 75%)</td>${"<td></td>".repeat(5)}</tr><tr><th colspan="6" style="text-align:left">Tally by choice</th></tr>${rows}</table>`)]);
+  }
+  return pages;
+}
+
+/* ---------------- UI state ---------------- */
+let goal="sight";
+const topicSel=$("#tPick"), descSel=$("#tDesc");
+topicSel.innerHTML=TOPICS.map((t,i)=>`<option value="${i}">${t.pic} ${esc(t.t)}</option>`).join("")+`<option value="custom">Custom topic…</option>`;
+function refreshDesc(){
+  const tp=topicSel.value==="custom"?customTopic():TOPICS[+topicSel.value];
+  const list=tp?tp.fit:[]; descSel.innerHTML=list.map(w=>`<option>${esc(w)}</option>`).join("")||`<option value="">Fill in the custom topic first</option>`;
+}
+topicSel.addEventListener("change",()=>{$("#tCustom").classList.toggle("hidden",topicSel.value!=="custom");refreshDesc()});
+["#cFit","#cTopic","#cOff"].forEach(s=>$(s).addEventListener("input",refreshDesc));
+refreshDesc();
+$("#rChips").innerHTML=REQUESTS.map((r,i)=>`<label><input type="checkbox" value="${i}" ${i<4?"checked":""}> ${r.pic} ${esc(r.t)}</label>`).join("");
+
+$("#sMode").addEventListener("change",()=>{$("#sHint").textContent=$("#sMode").value==="picture"?"Autogenerate picks sight words you can picture, like jump, red, two, and dog.":"Autogenerate picks from Dolch pre-primer and primer words."});
+function setGoal(gl){
+  goal=gl;
+  document.querySelectorAll(".goals button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.goal===gl));
+  document.querySelectorAll("[data-for]").forEach(el=>{
+    const f=el.dataset.for; el.classList.toggle("hidden",!(f===gl||(f==="topic"&&(gl==="cloze"||gl==="scramble"))));
+  });
+  document.querySelectorAll("[data-scramble-only]").forEach(el=>el.classList.toggle("hidden",gl!=="scramble"));
+  $("#makeBtn").classList.toggle("hidden",gl==="math"&&false);
+  $("#msg").textContent="";
+}
+document.querySelectorAll(".goals button").forEach(b=>b.addEventListener("click",()=>setGoal(b.dataset.goal)));
+
+/* saved settings */
+const KEY="folderjobs:v1";
+function save(){try{localStorage.setItem(KEY,JSON.stringify({goal,s:$("#sWords").value,m:$("#sMode").value,own:$("#mOwn").value,r:$("#rOwn").value}))}catch(e){}}
+try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").value=v.s||"";$("#sMode").value=v.m||"match";$("#mOwn").value=v.own||"";$("#rOwn").value=v.r||"";setGoal(v.goal||"sight");}}catch(e){}
+
+/* build specs */
+function specsFor(auto,n){
+  const specs=[];
+  for(let i=0;i<n;i++){
+    if(goal==="sight"){
+      let words;
+      if(auto){words=shuffle($("#sMode").value==="picture"?Object.keys(PICT):DOLCH).slice(0,Math.min(10,Math.max(3,+$("#sCount").value||10)));}
+      else{words=splitList($("#sWords").value); if(!words.length) throw "Add at least one sight word, or use Autogenerate."; if(words.length>10){words=words.slice(0,10);msgNote="Only the first 10 words were used.";} words=shuffle(words);}
+      specs.push({goal,words,mode:$("#sMode").value});
+    }
+    if(goal==="math"){
+      let probs=(!auto&&$("#mOwn").value.trim())?parseOwnMath($("#mOwn").value):null;
+      if(probs&&!probs.length) throw "Couldn't read your problems. Write one per line, like 23+14.";
+      if(probs&&i>0) probs=shuffle(probs);
+      if(!probs) probs=mathProblems($("#mOp").value,10);
+      specs.push({goal,probs,dist:distractors(probs,+$("#mDist").value)});
+    }
+    if(goal==="cloze"||goal==="scramble"){
+      let tp;
+      if(auto){tp=TOPICS[(rnd(TOPICS.length)+i*5)%TOPICS.length];}
+      else{tp=topicSel.value==="custom"?customTopic():TOPICS[+topicSel.value]; if(!tp) throw "Fill in the custom topic: a topic word, at least one describing word, and at least 2 distractors.";}
+      const opinion=auto?(Math.random()<.8?"like":"don't like"):$("#tOpinion").value;
+      const desc=auto?pick(tp.fit):(descSel.value||tp.fit[0]);
+      specs.push({goal,topic:tp,opinion:opinion==="don't like"?"don't like":"like",desc});
+    }
+    if(goal==="request"){
+      let ch;
+      if(auto){ch=shuffle(REQUESTS).slice(0,4+rnd(3));}
+      else{
+        ch=[...document.querySelectorAll("#rChips input:checked")].map(x=>REQUESTS[+x.value]);
+        splitList($("#rOwn").value).forEach(t=>ch.push({t,pic:"⭐",k:t}));
+        if(!ch.length) throw "Pick at least one choice.";
+        if(ch.length>6){ch=ch.slice(0,6);msgNote="Only the first 6 choices fit on the board.";}
+      }
+      specs.push({goal,choices:ch});
+    }
+  }
+  return specs;
+}
+let msgNote="";
+let folders=[];
+
+async function build(auto){
+  msgNote=""; usedAra=false; araFailed=false; $("#msg").textContent="";
+  let specs; const n=+$("#count").value;
+  try{specs=specsFor(auto,n);}catch(e){$("#msg").textContent=e;return;}
+  const themes=makeThemes(n);
+  folders=specs.map((s,i)=>({spec:s,th:themes[i]}));
+  await draw();
+  if(missingPics.length) msgNote=(msgNote?msgNote+" ":"")+"No picture found for: "+[...new Set(missingPics)].join(", ")+". Those boxes show ❓. Swap in a word you can picture, or use a different folder style for words like \u201cthe\u201d or \u201cwas.\u201d";
+  if(araFailed) msgNote=(msgNote?msgNote+" ":"")+"Some ARASAAC pictures couldn\u2019t load, so emoji were used. Check your connection, or wait a minute if ARASAAC is limiting requests, then tap New look.";
+  if(msgNote) $("#msg").textContent=msgNote;
+  save();
+}
+let missingPics=[];
+async function draw(){
+  usedAra=false; missingPics=[];
+  const out=$("#out"); out.innerHTML="";
+  out.classList.toggle("no-data",!$("#withData").checked);
+  for(let i=0;i<folders.length;i++){
+    const f=folders[i]; f.spec.th=f.th;
+    const pages=await renderFolder(f.spec,f.th);
+    const sec=document.createElement("section");
+    sec.innerHTML=`<div class="fset-head"><span class="swatch" style="${bandStyle(f.th,.18)}"></span><h2>${esc(f.th.name)} · ${esc(GOAL_INFO[f.spec.goal].name)}</h2><button class="btn ghost" data-relook="${i}">New look</button></div><div class="sheets">${pages.filter(p=>p[0]!=="Data sheet"||$("#withData").checked).map(p=>`<div class="sheet-wrap"><p class="sheet-label">${p[0]}</p>${p[1]}</div>`).join("")}</div>`;
+    out.appendChild(sec);
+  }
+  if(usedAra){out.querySelectorAll(".folder,.pieces").forEach(s=>s.insertAdjacentHTML("beforeend",`<div class="attrib">Pictograms by Sergio Palao, property of the Government of Arag\u00f3n, from ARASAAC (arasaac.org), CC BY-NC-SA</div>`));}
+  fitZoom();
+}
+$("#out").addEventListener("click",async e=>{
+  const im=e.target.closest("img[data-k]");
+  if(im){const k=im.dataset.k; picIdx.set(k,(picIdx.get(k)||0)+1); const y=window.scrollY; await draw(); window.scrollTo(0,y); return;}
+  const b=e.target.closest("[data-relook]"); if(!b) return;
+  const i=+b.dataset.relook; const used=new Set(folders.map(f=>f.th.name));
+  let th; do{th=makeThemes(1)[0]}while(used.has(th.name)); folders[i].th=th; await draw();
+});
+function fitZoom(){
+  const avail=Math.min($("#out").clientWidth,window.innerWidth-24);
+  const z=Math.min(1,avail/1008);
+  document.querySelectorAll(".sheet").forEach(s=>s.style.setProperty("--z",z.toFixed(3)));
+}
+window.addEventListener("resize",fitZoom);
+$("#autoBtn").addEventListener("click",()=>build(true));
+$("#makeBtn").addEventListener("click",()=>build(false));
+$("#withData").addEventListener("change",()=>{if(folders.length) draw()});
+$("#printBtn").addEventListener("click",()=>{
+  if(!folders.length){$("#msg").textContent="Make a folder first, then print.";return;}
+  try{window.print()}catch(e){$("#msg").textContent="Printing is blocked here. Open the page in its own browser tab and print from there."}
+});
+})();
+</script>
+</body>
+</html>
