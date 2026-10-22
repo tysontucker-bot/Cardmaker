@@ -100,6 +100,15 @@ textarea{min-height:86px;resize:vertical}
 .bigpic .cap{font-size:.34in;font-weight:700}
 .sentence{display:flex;flex-wrap:wrap;align-items:center;gap:.1in .12in;font-size:.36in;font-weight:700;line-height:1.2}
 .spot{border:.02in dashed var(--c);border-radius:.08in;position:relative;display:flex;align-items:center;justify-content:center}
+.bin{border:.035in solid var(--c);border-radius:.14in;background:var(--l);padding:.1in;display:flex;flex-direction:column;align-items:center;gap:.1in;flex:1;min-height:0;min-width:0}
+.bin.compact .bin-label{flex-direction:column;gap:.02in;padding:.05in .1in}
+.bin.compact .bin-label b{font-size:.24in}
+.bin.compact .bin-label .bp img{width:.5in;height:.5in}
+.bin-label{display:flex;align-items:center;gap:.1in;background:#fff;border:.025in solid var(--c);border-radius:.1in;padding:.05in .14in;max-width:100%}
+.bin-label .bp{font-size:.5in;line-height:1;display:flex}
+.bin-label .bp img{width:.6in;height:.6in;object-fit:contain}
+.bin-label b{font-size:.3in;color:var(--d);line-height:1.05}
+.bin .spot{background:#fff}
 .zone-label{font-size:.17in;color:var(--d);font-weight:700;margin:0}
 .want{display:flex;align-items:center;justify-content:center;gap:.16in;font-size:.44in;font-weight:700;flex-wrap:wrap}
 .corner-sym{position:absolute;top:.1in;right:.12in;width:.42in;height:.42in}
@@ -158,6 +167,7 @@ textarea{min-height:86px;resize:vertical}
     <div class="goals" role="group" aria-label="Goal">
       <button data-goal="sight" aria-pressed="true">Sight words</button>
       <button data-goal="cvc" aria-pressed="false">CVC words</button>
+      <button data-goal="sort" aria-pressed="false">Sort</button>
       <button data-goal="math" aria-pressed="false">Math within 50</button>
       <button data-goal="cloze" aria-pressed="false">Opinion cloze</button>
       <button data-goal="scramble" aria-pressed="false">Unscramble sentence</button>
@@ -203,6 +213,25 @@ textarea{min-height:86px;resize:vertical}
         <input type="number" id="cCount" min="3" max="8" value="6"></label>
       <label class="f">Goal on the data sheet
         <input type="text" id="cGoal" value="Reads and builds CVC words with 80% accuracy across 10 sessions."></label>
+    </div>
+
+    <!-- SORT -->
+    <div class="fields hidden" data-for="sort">
+      <label class="f">What to sort
+        <select id="oSet"></select></label>
+      <label class="f">Pieces per folder
+        <select id="oCount"><option>6</option><option>8</option><option>10</option><option selected>12</option></select></label>
+      <label class="f">Goal on the data sheet
+        <input type="text" id="oGoal" value="Sorts items into labeled groups by a single attribute with 80% accuracy."></label>
+      <label class="check"><input type="checkbox" id="oWords" checked> Words under the pictures</label>
+      <div class="hidden" id="oCustom" style="display:contents">
+        <label class="f">Group 1 name <input type="text" id="oA" placeholder="Plants"></label>
+        <label class="f">Group 1 items <small>Comma separated</small><input type="text" id="oAItems" placeholder="tree, flower, cactus, grass"></label>
+        <label class="f">Group 2 name <input type="text" id="oB" placeholder="Animals"></label>
+        <label class="f">Group 2 items <small>Comma separated</small><input type="text" id="oBItems" placeholder="dog, frog, bird, cow"></label>
+        <label class="f">Group 3 name <small>Optional</small><input type="text" id="oC" placeholder=""></label>
+        <label class="f">Group 3 items <small>Optional, comma separated</small><input type="text" id="oCItems" placeholder=""></label>
+      </div>
     </div>
 
     <!-- MATH -->
@@ -310,6 +339,42 @@ const CVC = {
 };
 const VOWELS = ["a","e","i","o","u"];
 
+// Sorting sets. Each item: [word, emoji]. pic:false keeps emoji (colors must stay true);
+// shape:true draws the shape itself so it sorts by shape, not by color.
+const SORTS = [
+  {name:"Plants and animals",groups:[
+    {t:"Plants",e:"🌱",k:"plant",items:[["tree","🌳"],["flower","🌸"],["cactus","🌵"],["grass","🌱"],["sunflower","🌻"],["leaf","🍃"],["palm tree","🌴"],["tulip","🌷"]]},
+    {t:"Animals",e:"🐾",k:"animals",items:[["dog","🐶"],["cat","🐱"],["cow","🐄"],["fish","🐟"],["bird","🐦"],["frog","🐸"],["horse","🐴"],["rabbit","🐰"]]}]},
+  {name:"Living and nonliving",groups:[
+    {t:"Living",e:"🌱",k:"living being",items:[["dog","🐶"],["tree","🌳"],["bird","🐦"],["fish","🐟"],["flower","🌸"],["baby","👶"],["frog","🐸"],["butterfly","🦋"]]},
+    {t:"Nonliving",e:"🪨",k:"stone",items:[["rock","🪨"],["chair","🪑"],["car","🚗"],["ball","⚽"],["cup","🥤"],["book","📚"],["shoe","👟"],["pencil","✏️"]]}]},
+  {name:"Sink and float",groups:[
+    {t:"Sink",e:"⬇️",k:"sink",items:[["rock","🪨"],["key","🔑"],["coin","🪙"],["spoon","🥄"],["scissors","✂️"],["bolt","🔩"],["anchor","⚓"],["hammer","🔨"]]},
+    {t:"Float",e:"🛟",k:"float",items:[["duck","🦆"],["leaf","🍃"],["feather","🪶"],["boat","⛵"],["sponge","🧽"],["apple","🍎"],["beach ball","🏐"],["log","🪵"]]}]},
+  {name:"Sound and no sound",groups:[
+    {t:"Sound",e:"🔊",k:"sound",items:[["drum","🥁"],["bell","🔔"],["trumpet","🎺"],["guitar","🎸"],["alarm clock","⏰"],["phone","📞"],["dog","🐶"],["piano","🎹"]]},
+    {t:"No sound",e:"🔇",k:"silence",items:[["book","📚"],["sock","🧦"],["feather","🪶"],["crayon","🖍️"],["rock","🪨"],["leaf","🍃"],["pillow","🛏️"],["spoon","🥄"]]}]},
+  {name:"Hot and cold",groups:[
+    {t:"Hot",e:"🔥",k:"hot",items:[["sun","☀️"],["fire","🔥"],["soup","🍲"],["coffee","☕"],["oven","🧑‍🍳"],["pizza","🍕"],["candle","🕯️"],["desert","🏜️"]]},
+    {t:"Cold",e:"❄️",k:"cold",items:[["ice","🧊"],["snowman","⛄"],["ice cream","🍦"],["penguin","🐧"],["snow","❄️"],["popsicle","🍧"],["igloo","🛖"],["mittens","🧤"]]}]},
+  {name:"Shapes (circle, square, triangle)",shape:true,groups:[
+    {t:"Circle",shape:"circle",items:[["circle"],["circle"],["circle"],["circle"],["circle"],["circle"]]},
+    {t:"Square",shape:"square",items:[["square"],["square"],["square"],["square"],["square"],["square"]]},
+    {t:"Triangle",shape:"triangle",items:[["triangle"],["triangle"],["triangle"],["triangle"],["triangle"],["triangle"]]}]},
+  {name:"Colors (red, blue, yellow)",pic:false,groups:[
+    {t:"Red",swatch:"#d62828",items:[["apple","🍎"],["strawberry","🍓"],["fire truck","🚒"],["tomato","🍅"],["cherries","🍒"],["red heart","❤️"]]},
+    {t:"Blue",swatch:"#1d4ed8",items:[["blueberries","🫐"],["jeans","👖"],["blue book","📘"],["whale","🐋"],["blue heart","💙"],["blue car","🚙"]]},
+    {t:"Yellow",swatch:"#f2c200",items:[["banana","🍌"],["sun","☀️"],["lemon","🍋"],["chick","🐤"],["yellow heart","💛"],["corn","🌽"]]}]}
+];
+const SHAPE_FILLS=[["red","#d62828"],["blue","#1d4ed8"],["green","#2a9d3a"],["yellow","#f2c200"],["purple","#7b3fbf"],["orange","#ef6c00"]];
+function shapeSVG(shape,fill,sizeIn,outline){
+  const f=outline?"none":fill, st=outline?"#222":"#222", sw=outline?3:1.5;
+  const body=shape==="circle"?`<circle cx="20" cy="20" r="17" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`
+    :shape==="square"?`<rect x="4" y="4" width="32" height="32" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`
+    :`<path d="M20 3L37 36H3z" fill="${f}" stroke="${st}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  return `<svg viewBox="0 0 40 40" style="width:${sizeIn}in;height:${sizeIn}in" aria-label="${shape}">${body}</svg>`;
+}
+
 const ADJ = "Brave Sunny Rocket Cozy Zippy Lucky Mighty Jolly Swift Bright Bouncy Clever Sparkly Happy Speedy Giant Tiny Silly Golden Cosmic".split(" ");
 const NOUN = "Otter Comet Fox Panda Falcon Turtle Maple Pebble Tiger Koala Rocket Cactus Dolphin Lemon Owl Bison Gecko Puffin Moose Walrus".split(" ");
 const PATTERNS = ["dots","stripes","zigzag","waves","checks","triangles","plus","scallops","diamonds","grid"];
@@ -330,6 +395,7 @@ const SYMBOLS = {
 const GOAL_INFO = {
   sight:{name:"Sight Words",crit:"Reads targeted sight words (set of 10 or fewer) with 80% accuracy across a minimum of 10 targeted sessions."},
   cvc:{name:"CVC Words",crit:"Reads and builds CVC words with 80% accuracy across 10 sessions."},
+  sort:{name:"Sort",crit:"Sorts items into labeled groups by a single attribute with 80% accuracy."},
   math:{name:"Math Within 50",crit:"Solves 10 addition/subtraction problems within 50 with a calculator and no more than 2 verbal prompts per set, 80% accuracy in 4 of 5 opportunities."},
   cloze:{name:"My Opinion",crit:"Obj. 1: Completes a cloze opinion sentence on a familiar topic with at least 2 descriptive distractors, 100% accuracy in 4 of 5 targeted sessions."},
   scramble:{name:"Build My Sentence",crit:"Obj. 2: Unscrambles and sequences the words of his cloze sentence, 100% accuracy in 4 of 5 targeted sessions."},
@@ -458,8 +524,9 @@ function tab(th){return `<div class="ftab">${symSVG(th)}<b>${esc(th.name)}</b></
 function boxHTML(w,h,content,num){
   return `<div class="box" style="width:${w}in;height:${h}in"><span class="dot"></span>${num?`<span class="num">${num}</span>`:""}${content||""}</div>`;
 }
-function piecesSheet(th,cards,w,h,title){
-  const cells=cards.map(c=>`<div class="cut"><div class="card" style="width:${w}in;height:${h}in;${bandStyle(th,.2)}"><div class="face">${symSVG(th,"sym")}${c}</div></div></div>`).join("");
+function piecesSheet(th,cards,w,h,title,noSymbol){
+  // Plain cards (shape and color sorts) get a gray border so the folder's colors don't give hints.
+  const cells=cards.map(c=>`<div class="cut"><div class="card" style="width:${w}in;height:${h}in;${noSymbol?"background:#c8c8c8":bandStyle(th,.2)}"><div class="face">${noSymbol?"":symSVG(th,"sym")}${c}</div></div></div>`).join("");
   return sheet(th,"pieces",`<div class="phead">${tab(th)}<p>${esc(title)}: cut on the dashed lines, laminate, and add velcro to the back of each piece.</p></div><div class="cutgrid">${cells}</div>`);
 }
 function wordCard(word,w,base){return `<span class="w" style="font-size:${fit(word,w,base)}">${esc(word)}</span>`}
@@ -543,6 +610,38 @@ async function renderFolder(spec,th){
     const rows=words.map(w=>`<tr><td class="l">${esc(w)}</td>${"<td></td>".repeat(10)}</tr>`).join("");
     pages.push(["Data sheet",dataSheet(th,"cvc",`<table><tr><th>Word</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">${note}${extraNote}</p>`)]);
   }
+  if(g==="sort"){
+    const groups=spec.groups; const items=spec.items; const showWords=spec.words;
+    const piecePic=async(it,size)=>{
+      if(it.shape) return shapeSVG(it.shape,it.fill,size*(.62+it.scale*.3));
+      const ph=await picHTML(spec.pic===false?null:it.t,it.e||"🖼️");
+      if(ph==="🖼️"){missingPics.push(it.t); it.noPic=true; return `<span style="font-size:${fit(it.t,1.0,.3)};font-weight:700">${esc(it.t)}</span>`;}
+      return ph.includes("<img")?ph.replace("<img",`<img style="width:${size}in;height:${size}in;object-fit:contain"`):`<span style="font-size:${(size*.86).toFixed(2)}in;line-height:1">${ph}</span>`;
+    };
+    const labelPic=async gr=>{
+      if(gr.shape) return shapeSVG(gr.shape,"",.5,true);
+      if(gr.swatch) return `<span style="display:inline-block;width:.5in;height:.5in;border-radius:.1in;background:${gr.swatch};border:.02in solid #222"></span>`;
+      return picHTML(gr.k||gr.t,gr.e||"📦");
+    };
+    const labels=await Promise.all(groups.map(labelPic));
+    const counts=groups.map((_,gi)=>items.filter(it=>it.g===gi).length);
+    const three=groups.length===3;
+    const binHTML=(gi,cols,spot,compact)=>`<div class="bin${compact?" compact":""}"><div class="bin-label"><span class="bp">${labels[gi]}</span><b>${esc(groups[gi].t)}</b></div><div class="grid" style="grid-template-columns:repeat(${cols},${spot}in);gap:.1in">${Array.from({length:counts[gi]},()=>`<div class="spot" style="width:${spot}in;height:${spot}in"><span class="dot"></span></div>`).join("")}</div></div>`;
+    const maxCount=Math.max(...counts);
+    // Every spot is the same size, and the cut-out cards are made just smaller than it.
+    const spot=three||maxCount>6?.9:1.1;
+    const colsFor=gi=>three?Math.min(4,Math.max(1,counts[gi])):(maxCount>6?4:3);
+    const instr=`Look at each picture. Which group does it go in? Stick it in the right box.`;
+    const right=three?`<div style="display:flex;flex-direction:column;gap:.14in;flex:1;min-height:0">${binHTML(1,colsFor(1),spot)}${binHTML(2,colsFor(2),spot)}</div>`:binHTML(1,colsFor(1),spot);
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Sort It</p><p class="finstr">${instr}</p>${binHTML(0,colsFor(0),spot)}</div><div class="gutter"></div><div class="half">${right}</div>`)]);
+    const cardSize=+(spot-.08).toFixed(2), pieceSize=+(cardSize*.7).toFixed(2);
+    const cards=await Promise.all(shuffle(items).map(async it=>`<div class="p" style="display:flex;align-items:center;justify-content:center;height:${pieceSize}in">${await piecePic(it,pieceSize)}</div>${showWords&&!it.shape&&!it.noPic?`<div class="lab" style="font-size:${fit(it.t,cardSize-.1,.15)};margin-top:0">${esc(it.t)}</div>`:""}`));
+    // On shape and color sorts the folder's own symbol would be a confusing extra shape or color.
+    const plain=groups.some(gr=>gr.shape||gr.swatch);
+    pages.push(["Pieces",piecesSheet(th,cards,cardSize,cardSize,"Sorting cards",plain)]);
+    const rows=items.map(it=>`<tr><td class="l">${esc(it.t)} <span style="font-weight:400;color:#555">(${esc(groups[it.g].t)})</span></td>${"<td></td>".repeat(10)}</tr>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"sort",`<table><tr><th>Item (group)</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">Correct / ${items.length}</td>${"<td></td>".repeat(10)}</tr><tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">Mark + placed in the right group, − wrong group or no response, P prompted.</p>`)]);
+  }
   if(g==="math"){
     const probs=spec.probs; const half=Math.ceil(probs.length/2);
     const row=(p,i)=>`<div class="prob"><span class="pn">${i+1}.</span><span>${p.a} ${p.sym} ${p.b} =</span>${boxHTML(1.3,.85,"")}</div>`;
@@ -597,6 +696,15 @@ function refreshDesc(){
 topicSel.addEventListener("change",()=>{$("#tCustom").classList.toggle("hidden",topicSel.value!=="custom");refreshDesc()});
 ["#cFit","#cTopic","#cOff"].forEach(s=>$(s).addEventListener("input",refreshDesc));
 refreshDesc();
+const sortSel=$("#oSet");
+sortSel.innerHTML=SORTS.map((st,i)=>`<option value="${i}">${esc(st.name)}</option>`).join("")+`<option value="custom">My own groups…</option>`;
+sortSel.addEventListener("change",()=>$("#oCustom").classList.toggle("hidden",sortSel.value!=="custom"));
+function customSort(){
+  const groups=[["#oA","#oAItems"],["#oB","#oBItems"],["#oC","#oCItems"]].map(([n,it])=>({t:$(n).value.trim(),items:splitList($(it).value).map(w=>[w,""])}))
+    .filter(gr=>gr.t&&gr.items.length);
+  if(groups.length<2) return null;
+  return {name:"Custom",custom:true,groups:groups.map(gr=>({...gr,k:gr.t,e:"📦",items:shuffle(gr.items)}))};
+}
 $("#rChips").innerHTML=REQUESTS.map((r,i)=>`<label><input type="checkbox" value="${i}" ${i<4?"checked":""}> ${r.pic} ${esc(r.t)}</label>`).join("");
 
 $("#sMode").addEventListener("change",()=>{$("#sHint").textContent=$("#sMode").value==="picture"?"Autogenerate picks sight words you can picture, like jump, red, two, and dog.":"Autogenerate picks from Dolch pre-primer and primer words."});
@@ -615,9 +723,14 @@ document.querySelectorAll(".goals button").forEach(b=>b.addEventListener("click"
 /* saved settings */
 const KEY="folderjobs:v1";
 function save(){try{localStorage.setItem(KEY,JSON.stringify({goal,s:$("#sWords").value,m:$("#sMode").value,own:$("#mOwn").value,r:$("#rOwn").value,
-  cw:$("#cWords").value,cm:$("#cMode").value,cv:$("#cVowel").value,cg:$("#cGoal").value}))}catch(e){}}
+  cw:$("#cWords").value,cm:$("#cMode").value,cv:$("#cVowel").value,cg:$("#cGoal").value,
+  os:$("#oSet").value,oc:$("#oCount").value,og:$("#oGoal").value,ow:$("#oWords").checked,
+  ox:["#oA","#oAItems","#oB","#oBItems","#oC","#oCItems"].map(x=>$(x).value)}))}catch(e){}}
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").value=v.s||"";$("#sMode").value=v.m||"match";$("#mOwn").value=v.own||"";$("#rOwn").value=v.r||"";
-  $("#cWords").value=v.cw||"";if(v.cm)$("#cMode").value=v.cm;if(v.cv)$("#cVowel").value=v.cv;if(v.cg)$("#cGoal").value=v.cg;setGoal(v.goal||"sight");}}catch(e){}
+  $("#cWords").value=v.cw||"";if(v.cm)$("#cMode").value=v.cm;if(v.cv)$("#cVowel").value=v.cv;if(v.cg)$("#cGoal").value=v.cg;
+  if(v.os){$("#oSet").value=v.os;$("#oCustom").classList.toggle("hidden",v.os!=="custom");}if(v.oc)$("#oCount").value=v.oc;if(v.og)$("#oGoal").value=v.og;if(v.ow===false)$("#oWords").checked=false;
+  if(Array.isArray(v.ox))["#oA","#oAItems","#oB","#oBItems","#oC","#oCItems"].forEach((x,i)=>{$(x).value=v.ox[i]||""});
+  setGoal(v.goal||"sight");}}catch(e){}
 
 /* build specs */
 function specsFor(auto,n){
@@ -643,6 +756,26 @@ function specsFor(auto,n){
       }
       GOAL_INFO.cvc.crit=$("#cGoal").value.trim()||GOAL_INFO.cvc.crit;
       specs.push({goal,words,mode:$("#cMode").value});
+    }
+    if(goal==="sort"){
+      const total=+$("#oCount").value||12;
+      let set;
+      if($("#oSet").value==="custom"){
+        set=customSort(); if(!set) throw "Fill in at least 2 groups, each with a name and at least 1 item.";
+      }else set=SORTS[+$("#oSet").value];
+      const per=Math.floor(total/set.groups.length), extra=total-per*set.groups.length;
+      const items=[];
+      const fills=shuffle(SHAPE_FILLS);
+      set.groups.forEach((gr,gi)=>{
+        const want=per+(gi<extra?1:0);
+        const pool=set.custom?gr.items.slice(0,want):shuffle(gr.items).slice(0,want);
+        pool.forEach(([t,e],k)=>{
+          if(gr.shape){const [cn,hex]=fills[(k+gi*2)%fills.length]; items.push({t:`${cn} ${gr.shape}`,g:gi,shape:gr.shape,fill:hex,scale:Math.random()});}
+          else items.push({t,e,g:gi});
+        });
+      });
+      GOAL_INFO.sort.crit=$("#oGoal").value.trim()||GOAL_INFO.sort.crit;
+      specs.push({goal,groups:set.groups,items,pic:set.pic,words:$("#oWords").checked});
     }
     if(goal==="math"){
       let probs=(!auto&&$("#mOwn").value.trim())?parseOwnMath($("#mOwn").value):null;
@@ -683,7 +816,8 @@ async function build(auto){
   const themes=makeThemes(n);
   folders=specs.map((s,i)=>({spec:s,th:themes[i]}));
   await draw();
-  if(missingPics.length) msgNote=(msgNote?msgNote+" ":"")+"No picture found for: "+[...new Set(missingPics)].join(", ")+". Those boxes show ❓. Swap in a word you can picture, or use a different folder style for words like \u201cthe\u201d or \u201cwas.\u201d";
+  if(missingPics.length&&goal==="sort") msgNote=(msgNote?msgNote+" ":"")+"No picture found for: "+[...new Set(missingPics)].join(", ")+". Those cards show the word instead. Turn on ARASAAC pictures, or try a different word.";
+  else if(missingPics.length) msgNote=(msgNote?msgNote+" ":"")+"No picture found for: "+[...new Set(missingPics)].join(", ")+". Those boxes show ❓. Swap in a word you can picture, or use a different folder style for words like \u201cthe\u201d or \u201cwas.\u201d";
   if(araFailed) msgNote=(msgNote?msgNote+" ":"")+"Some ARASAAC pictures couldn\u2019t load, so emoji were used. Check your connection, or wait a minute if ARASAAC is limiting requests, then tap New look.";
   if(msgNote) $("#msg").textContent=msgNote;
   save();
