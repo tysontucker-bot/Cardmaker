@@ -13,7 +13,7 @@ import {
   boxesFilled,
   sessionsToCSV,
   programOf
-} from './data-logic.js?v=20261021f';
+} from './data-logic.js?v=20261021g';
 
 const STORAGE_KEY = 'cardmaker-live-data-v1';
 export const TRIAL_COUNT = 5;

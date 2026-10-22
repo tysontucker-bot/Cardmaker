@@ -2,7 +2,7 @@
 // +, − and P buttons. Data lands in the same saved sessions as the one-student sheet,
 // so weekly graphs, history and CSV export all include group data.
 
-import { loadStore, saveStore, makeId, TRIAL_COUNT } from './live-data.js?v=20261021f';
+import { loadStore, saveStore, makeId, TRIAL_COUNT } from './live-data.js?v=20261021g';
 import {
   scoreSession,
   scoreTrials,
@@ -15,7 +15,7 @@ import {
   recordTrial,
   nextTargetIndex,
   nextStudentIndex
-} from './data-logic.js?v=20261021f';
+} from './data-logic.js?v=20261021g';
 
 const GROUPS_KEY = 'cardmaker-groups-v1';
 const CURRENT_CARDS = ''; // a student assigned to whatever cards are open

@@ -1,8 +1,6 @@
-import { RELATIONSHIPS, buildCardSet, parseTargetLines } from './logic.js?v=20261021f';
-import { openLiveDataSheet } from './live-data.js?v=20261021f';
-import { initCardSets, shrinkDataUrl, loadSets } from './card-sets.js?v=20261021f';
-import { openGroupSession } from './group-data.js?v=20261021f';
-import { createPictureEditor } from './picture-editor.js?v=20261021f';
+import { RELATIONSHIPS, buildCardSet, parseTargetLines } from './logic.js?v=20261021g';
+import { initCardSets, shrinkDataUrl, loadSets } from './card-sets.js?v=20261021g';
+import { createPictureEditor } from './picture-editor.js?v=20261021g';
 
 const relationshipSelect = document.getElementById('relationship');
 const arraySizeSelect = document.getElementById('arraySize');
@@ -19,6 +17,19 @@ const preview = document.getElementById('preview');
 const status = document.getElementById('status');
 
 const symbolCache = new Map();
+
+// The data sheets load only when you open them, so if one of their files is missing or
+// out of date, card making still works and you get a message instead of a blank page.
+const VERSION = '20261021g';
+async function loadDataModule(name) {
+  try {
+    return await import(`./${name}.js?v=${VERSION}`);
+  } catch (error) {
+    console.error(error);
+    status.textContent = `The data sheet didn’t load. Refresh the page; if it still doesn’t open, ${name}.js or data-logic.js on GitHub may be missing or out of date.`;
+    return null;
+  }
+}
 
 // The cards currently on screen, and the settings they were made from.
 let currentCards = [];
@@ -592,7 +603,10 @@ async function getTargetPicture(target, relationshipId) {
   return symbol ? { imageUrl: symbol.imageUrl, alt: term } : null;
 }
 
-function openTakeData() {
+async function openTakeData() {
+  const liveData = await loadDataModule('live-data');
+  if (!liveData) return;
+  const { openLiveDataSheet } = liveData;
   const relationshipId = relationshipSelect.value;
   const useSet = currentSet && currentSet.relationshipId === relationshipId;
   openLiveDataSheet({
@@ -673,7 +687,11 @@ function currentCardsLabel() {
   return `${relationshipLabel(relationshipSelect.value)}, ${count} target${count === 1 ? '' : 's'}`;
 }
 
-function openGroup() {
+async function openGroup() {
+  const [groupData, liveData] = await Promise.all([loadDataModule('group-data'), loadDataModule('live-data')]);
+  if (!groupData || !liveData) return;
+  const { openGroupSession } = groupData;
+  const { openLiveDataSheet } = liveData;
   openGroupSession({
     preview,
     status,
@@ -752,7 +770,7 @@ initCardSets({
   applySet: applyCardSet,
   takeData: async (set) => {
     await applyCardSet(set);
-    openTakeData();
+    await openTakeData();
   },
   onCurrentChange: (set) => {
     currentSet = set;
