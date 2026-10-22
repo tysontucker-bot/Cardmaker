@@ -1,6 +1,5 @@
 import {
   MARK_NAMES,
-  nextMark,
   scoreTrials,
   scoreSession,
   emptyTrials,
@@ -14,14 +13,14 @@ import {
   boxesFilled,
   sessionsToCSV,
   programOf
-} from './data-logic.js';
+} from './data-logic.js?v=20261021f';
 
 const STORAGE_KEY = 'cardmaker-live-data-v1';
-const TRIAL_COUNT = 5;
+export const TRIAL_COUNT = 5;
 
 // ── Storage (saved on this device's browser) ────────────────────────────────
 
-function loadStore() {
+export function loadStore() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (parsed && Array.isArray(parsed.sessions)) return parsed;
@@ -31,7 +30,7 @@ function loadStore() {
   return { sessions: [], lastStudent: '' };
 }
 
-function saveStore(store) {
+export function saveStore(store) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     return true;
@@ -41,7 +40,7 @@ function saveStore(store) {
   }
 }
 
-function makeId() {
+export function makeId() {
   return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
@@ -69,7 +68,7 @@ function programFromSession(s) {
 // program: { programId, relationshipId, label }. A saved card set is its own program,
 // so two sets that use the same matching relationship keep separate graphs.
 // getPicture(target, relationshipId) resolves to { imageUrl, alt } or null.
-export function openLiveDataSheet({ preview, status, targetLabels, program, getPicture }) {
+export function openLiveDataSheet({ preview, status, targetLabels, program, getPicture, student, date }) {
   if (targetLabels.length === 0) {
     status.textContent = 'Please enter at least one target item.';
     preview.innerHTML = '';
@@ -92,9 +91,12 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
   printBtn.addEventListener('click', () => window.print());
   const exportBtn = el('button', 'live-btn live-btn--quiet', 'Export CSV');
   exportBtn.type = 'button';
+  const undoBtn = el('button', 'live-btn live-btn--quiet live-undo', 'Undo');
+  undoBtn.type = 'button';
+  undoBtn.disabled = true;
   const clearBtn = el('button', 'live-btn live-btn--quiet', 'Clear this session');
   clearBtn.type = 'button';
-  actions.append(printBtn, exportBtn, clearBtn);
+  actions.append(undoBtn, printBtn, exportBtn, clearBtn);
 
   const title = el('h2', 'data-sheet-title', 'Data Collection Sheet');
   const programLine = el('p', 'live-program');
@@ -124,12 +126,12 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
 
   const key = el('p', 'live-key no-print');
   key.innerHTML =
-    'Tap a box to score it: <span class="mark mark--plus">+</span> correct, ' +
+    'One tap per trial: <span class="mark mark--plus">+</span> correct, ' +
     '<span class="mark mark--minus">−</span> incorrect, <span class="mark mark--prompt">P</span> prompted. ' +
-    'Tap again to change it.';
+    'Tap a scored box to clear it.';
 
   const tableWrap = el('div', 'live-table-wrap');
-  const table = el('table', 'data-sheet-table live-table');
+  const table = el('table', 'live-table');
   tableWrap.append(table);
 
   const saveLine = el('p', 'live-save no-print');
@@ -166,6 +168,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
         updatedAt: null
       };
     }
+    undoStack = [];
     studentInput.value = session.student || student;
     dateInput.value = session.date;
     programLine.textContent = `Program: ${session.relationshipLabel}`;
@@ -222,81 +225,128 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     return td;
   }
 
+  // One tap per trial: the +, − and P buttons fill the next open trial for that target.
+  // Tapping a filled trial box clears it; Undo reverses the last tap of either kind.
+  let undoStack = [];
+
+  function needsStudent() {
+    if (studentInput.value.trim()) return false;
+    saveLine.textContent = 'Type the student’s name first so this session saves to them.';
+    saveLine.classList.add('live-save--error');
+    studentInput.focus();
+    return true;
+  }
+
+  function changed() {
+    persist();
+    renderTable();
+    renderWeekly();
+    renderHistory();
+  }
+
+  function scoreRow(rowIndex, mark) {
+    if (needsStudent()) return;
+    const row = session.rows[rowIndex];
+    const slot = row.trials.indexOf('');
+    if (slot === -1) return;
+    row.trials[slot] = mark;
+    undoStack.push({ rowIndex, slot, previous: '' });
+    changed();
+  }
+
+  function clearTrial(rowIndex, slot) {
+    const row = session.rows[rowIndex];
+    if (!row.trials[slot]) return;
+    undoStack.push({ rowIndex, slot, previous: row.trials[slot] });
+    // The next tap on that target fills this box again.
+    row.trials[slot] = '';
+    changed();
+  }
+
+  function undoLast() {
+    const last = undoStack.pop();
+    if (!last) return;
+    session.rows[last.rowIndex].trials[last.slot] = last.previous;
+    changed();
+  }
+
   function renderTable() {
     table.innerHTML = '';
+    undoBtn.disabled = undoStack.length === 0;
     const thead = el('thead');
     const headRow = el('tr');
-    ['Target', ...Array.from({ length: TRIAL_COUNT }, (_, i) => `Trial ${i + 1}`), '%'].forEach((label) => {
-      const th = el('th', '', label);
+    const headings = [
+      ['Target', 'live-col-target'],
+      ['Score', 'live-col-score no-print'],
+      ...Array.from({ length: TRIAL_COUNT }, (_, i) => [`${i + 1}`, 'live-col-trial']),
+      ['%', 'live-col-pct']
+    ];
+    headings.forEach(([label, cls]) => {
+      const th = el('th', cls, label);
       th.scope = 'col';
+      if (cls === 'live-col-trial') th.setAttribute('aria-label', `Trial ${label}`);
       headRow.append(th);
     });
     thead.append(headRow);
     table.append(thead);
 
     const tbody = el('tbody');
-    session.rows.forEach((row) => {
+    session.rows.forEach((row, rowIndex) => {
       const tr = el('tr');
       tr.append(renderTargetCell(row));
 
-      const pctCell = el('td', 'live-pct');
-      const updateRowPct = () => {
-        pctCell.textContent = formatPercent(scoreTrials(row.trials).percent);
-      };
-
-      row.trials.forEach((mark, trialIndex) => {
-        const td = el('td', 'live-trial-cell');
-        const btn = el('button', 'trial-btn');
+      const full = !row.trials.includes('');
+      const scoreCell = el('td', 'live-score-cell no-print');
+      const marks = el('div', 'live-marks');
+      [
+        ['+', '+', 'live-mark--plus'],
+        ['-', '−', 'live-mark--minus'],
+        ['P', 'P', 'live-mark--prompt']
+      ].forEach(([mark, label, cls]) => {
+        const btn = el('button', `live-mark ${cls}`, label);
         btn.type = 'button';
-        const paint = () => {
-          const value = row.trials[trialIndex];
-          btn.textContent = value === '-' ? '−' : value;
-          btn.dataset.mark = value || 'empty';
-          btn.setAttribute('aria-label', `${row.target}, trial ${trialIndex + 1}: ${MARK_NAMES[value]}`);
-        };
-        paint();
-        btn.addEventListener('click', () => {
-          if (!studentInput.value.trim()) {
-            saveLine.textContent = 'Type the student’s name first so this session saves to them.';
-            saveLine.classList.add('live-save--error');
-            studentInput.focus();
-            return;
-          }
-          row.trials[trialIndex] = nextMark(row.trials[trialIndex]);
-          paint();
-          updateRowPct();
-          updateTotal();
-          persist();
-          renderWeekly();
-          renderHistory();
-        });
-        td.append(btn);
+        btn.disabled = full;
+        btn.setAttribute('aria-label', `${row.target}: ${MARK_NAMES[mark]}`);
+        btn.addEventListener('click', () => scoreRow(rowIndex, mark));
+        marks.append(btn);
+      });
+      scoreCell.append(marks);
+      tr.append(scoreCell);
+
+      row.trials.forEach((value, trialIndex) => {
+        const td = el('td', 'live-trial-cell');
+        const box = el('button', 'trial-btn', value === '-' ? '−' : value);
+        box.type = 'button';
+        box.dataset.mark = value || 'empty';
+        box.disabled = !value;
+        box.setAttribute(
+          'aria-label',
+          value
+            ? `${row.target}, trial ${trialIndex + 1}: ${MARK_NAMES[value]}. Tap to clear.`
+            : `${row.target}, trial ${trialIndex + 1}: not scored`
+        );
+        box.addEventListener('click', () => clearTrial(rowIndex, trialIndex));
+        td.append(box);
         tr.append(td);
       });
 
-      updateRowPct();
-      tr.append(pctCell);
+      tr.append(el('td', 'live-pct', formatPercent(scoreTrials(row.trials).percent)));
       tbody.append(tr);
     });
     table.append(tbody);
 
+    const { correct, scored, percent } = scoreSession(session);
     const tfoot = el('tfoot');
     const totalRow = el('tr', 'live-total-row');
     const totalLabel = el('th', '', 'Session total');
     totalLabel.scope = 'row';
-    const totalDetail = el('td', 'live-total-detail');
+    const scoreSpacer = el('td', 'no-print');
+    const totalDetail = el('td', 'live-total-detail', scored ? `${correct} correct out of ${scored} trials` : 'No trials scored yet');
     totalDetail.colSpan = TRIAL_COUNT;
-    const totalPct = el('td', 'live-pct live-total-pct');
-    totalRow.append(totalLabel, totalDetail, totalPct);
+    const totalPct = el('td', 'live-pct live-total-pct', formatPercent(percent));
+    totalRow.append(totalLabel, scoreSpacer, totalDetail, totalPct);
     tfoot.append(totalRow);
     table.append(tfoot);
-
-    function updateTotal() {
-      const { correct, scored, percent } = scoreSession(session);
-      totalDetail.textContent = scored ? `${correct} correct out of ${scored} trials` : 'No trials scored yet';
-      totalPct.textContent = formatPercent(percent);
-    }
-    updateTotal();
   }
 
   function renderWeekly() {
@@ -455,6 +505,8 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
 
   // ── Controls ──
 
+  undoBtn.addEventListener('click', undoLast);
+
   // Changing the student or date switches to that day's session (or starts a fresh one).
   function switchSession() {
     const name = studentInput.value.trim();
@@ -480,6 +532,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     });
     store.sessions = store.sessions.filter((s) => s !== session);
     saveStore(store);
+    undoStack = [];
     renderAll();
   });
 
@@ -504,10 +557,11 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
 
   // ── Start ──
   loadSession({
-    student: store.lastStudent || '',
-    date: toISODate(),
+    student: student ?? (store.lastStudent || ''),
+    date: date || toISODate(),
     program,
     addTargets: targetLabels
   });
+  page.scrollIntoView({ block: 'start' });
   status.textContent = `Taking data on ${targetLabels.length} target(s). Marks save as you tap.`;
 }
