@@ -134,3 +134,44 @@ export function sessionsToCSV(sessions, trialCount) {
   }
   return lines.map((line) => line.map(csvCell).join(',')).join('\n');
 }
+
+// ── Group sessions ───────────────────────────────────────────────────────────
+
+// Fills the first open trial for a target. Returns the trial number used, or -1 if full.
+export function recordTrial(row, mark) {
+  const slot = row.trials.indexOf('');
+  if (slot === -1) return -1;
+  row.trials[slot] = mark;
+  return slot;
+}
+
+function filledCount(row) {
+  return row.trials.filter(Boolean).length;
+}
+
+// Picks the next target to present: the one with the fewest trials so far, starting
+// after the one just run so targets rotate. Returns -1 when every trial is scored.
+export function nextTargetIndex(rows, afterIndex = -1) {
+  let best = -1;
+  let bestCount = Infinity;
+  for (let step = 1; step <= rows.length; step += 1) {
+    const i = (afterIndex + step + rows.length) % rows.length;
+    const row = rows[i];
+    if (!row.trials.includes('')) continue;
+    const count = filledCount(row);
+    if (count < bestCount) {
+      best = i;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+// Whose turn is next after `afterIndex`, skipping students who are finished.
+export function nextStudentIndex(isFinished, count, afterIndex) {
+  for (let step = 1; step <= count; step += 1) {
+    const i = (afterIndex + step) % count;
+    if (!isFinished(i)) return i;
+  }
+  return -1;
+}
