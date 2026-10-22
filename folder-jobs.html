@@ -34,8 +34,34 @@ button,input,select,textarea{font:inherit;color:inherit}
 header.top{display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;flex-wrap:wrap}
 .tabmark{background:var(--manila);color:var(--ink);border:2px solid var(--kraft);border-bottom:none;border-radius:12px 12px 0 0;padding:6px 18px 4px;font-weight:700;font-size:26px;letter-spacing:.2px}
 .back{color:var(--text);font-weight:500;margin-bottom:8px}
-img[data-k]{cursor:pointer}
-@media print{img[data-k]{cursor:auto}}
+[data-k]{cursor:pointer}
+@media print{[data-k]{cursor:auto}}
+/* picture chooser */
+.pc-back{position:fixed;inset:0;background:rgba(20,24,36,.35);z-index:40}
+.pc{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:var(--panel);color:var(--text);z-index:41;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.2);border-left:2px solid var(--line)}
+.pc[hidden],.pc-back[hidden]{display:none}
+.pc-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:2px solid var(--line)}
+.pc-head h2{flex:1;margin:0;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.pc-nav{display:flex;align-items:center;gap:8px}
+.pc-nav span{flex:1;text-align:center;font-size:14px;color:var(--muted)}
+.pc-cur{display:flex;align-items:center;gap:12px;border:2px solid var(--teal);border-radius:12px;padding:8px;background:var(--paper);color:#1F2A44}
+.pc-cur .pic{width:88px;height:88px;display:flex;align-items:center;justify-content:center;font-size:64px;line-height:1;background:#fff;border-radius:8px}
+.pc-cur .pic img{max-width:100%;max-height:100%;object-fit:contain}
+.pc-cur p{margin:0 0 4px;font-weight:700}
+.pc-link{background:none;border:none;padding:0;color:var(--teal);text-decoration:underline;font-weight:600;cursor:pointer;font-size:14px;text-align:left}
+.pc-search{display:flex;gap:8px}
+.pc-search input{flex:1;min-width:0}
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.pc-grid .pc-msg{grid-column:1/-1;margin:0;color:var(--muted);font-size:14px}
+.pc-opt{aspect-ratio:1;background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px;cursor:pointer}
+.pc-opt img{width:100%;height:100%;object-fit:contain;display:block}
+.pc-opt:hover,.pc-opt:focus-visible{border-color:var(--teal)}
+.pc-opt.on{border:3px solid var(--teal);box-shadow:0 0 0 3px rgba(47,127,134,.25)}
+.pc-up{position:relative;display:flex;align-items:center;justify-content:center;min-height:46px;border:2px dashed var(--line);border-radius:10px;font-weight:700;cursor:pointer}
+.pc-up input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media (max-width:640px){.pc{top:auto;left:0;width:100%;height:85vh;border-radius:16px 16px 0 0;border-left:none;border-top:2px solid var(--line)}}
+@media print{.pc,.pc-back{display:none!important}}
 header.top p{margin:0 0 6px;color:var(--muted);max-width:60ch}
 
 .panel{background:var(--panel);border:2px solid var(--line);border-radius:4px 14px 14px 14px;padding:18px}
@@ -280,7 +306,7 @@ textarea{min-height:86px;resize:vertical}
       <label class="check"><input type="checkbox" id="withData" checked> Include data sheet</label>
       <label class="check"><input type="checkbox" id="useAra" checked> Use ARASAAC pictures</label>
     </div>
-    <p class="note">Tap any picture in the preview to swap it for a different ARASAAC symbol. The folder and its pieces always change together.</p>
+    <p class="note">Tap any picture in the preview to see other pictures and choose one, or upload your own. The folder and its pieces always change together, and your choice is remembered for that word.</p>
 
     <div class="actions">
       <button class="btn primary" id="autoBtn">✨ Autogenerate</button>
@@ -450,7 +476,12 @@ function themeStyle(th){return `--c:${th.c};--d:${th.d};--l:${th.l};--m:${th.m}`
 function bandStyle(th,scale){return `background-image:${patternURI(th.pattern,th.c,th.m,th.l)};background-size:${scale||.32}in`}
 
 /* ---------------- pictures ---------------- */
-const picCache=new Map(), picIdx=new Map(); let araFailed=false;
+const picCache=new Map(); let araFailed=false;
+// Pictures you picked for a word: { src, ara } for an image, or { emoji:true } to keep the emoji.
+// Remembered on this device, so "cat" keeps your picture in every folder.
+const CHOICE_KEY="folderjobs:pictures";
+const picChoice=new Map((()=>{try{return Object.entries(JSON.parse(localStorage.getItem(CHOICE_KEY)||"{}"))}catch(e){return []}})());
+function saveChoices(){try{localStorage.setItem(CHOICE_KEY,JSON.stringify(Object.fromEntries(picChoice)))}catch(e){$("#msg").textContent="That picture is too big to remember on this device. It will show until you reload.";}}
 async function araResults(key){
   if(!picCache.has(key)){
     picCache.set(key,(async()=>{
@@ -458,22 +489,30 @@ async function araResults(key){
         const r=await fetch("https://api.arasaac.org/api/pictograms/en/search/"+encodeURIComponent(key));
         if(r.status===404) return [];
         if(!r.ok) throw new Error(r.status);
-        const j=await r.json(); return Array.isArray(j)?j.slice(0,12).map(x=>x._id):[];
+        const j=await r.json(); return Array.isArray(j)?j.slice(0,30).map(x=>x._id):[];
       }catch(e){araFailed=true; picCache.delete(key); return [];}
     })());
   }
   return picCache.get(key);
 }
+const araURL=id=>`https://static.arasaac.org/pictograms/${id}/${id}_500.png`;
 async function picHTML(keyword,emoji){
-  if($("#useAra").checked && keyword){
-    const key=keyword.toLowerCase(); const ids=await araResults(key);
+  if(!keyword) return esc(emoji||"🖼️");
+  const key=keyword.toLowerCase();
+  const tapEmoji=`<span class="emo" data-k="${esc(key)}" data-e="${esc(emoji||"🖼️")}" title="Tap to choose a picture">${esc(emoji||"🖼️")}</span>`;
+  const ch=picChoice.get(key);
+  if(ch&&ch.src){ if(ch.ara) usedAra=true; return `<img data-k="${esc(key)}" data-e="${esc(emoji||"")}" src="${esc(ch.src)}" alt="${esc(keyword)}" title="Tap to choose a different picture">`; }
+  if(ch&&ch.emoji) return tapEmoji;
+  if($("#useAra").checked){
+    const ids=await araResults(key);
     if(ids.length){
-      const id=ids[(picIdx.get(key)||0)%ids.length]; usedAra=true;
-      return `<img data-k="${esc(key)}" src="https://static.arasaac.org/pictograms/${id}/${id}_500.png" alt="${esc(keyword)}" title="Tap for a different picture">`;
+      usedAra=true;
+      return `<img data-k="${esc(key)}" data-e="${esc(emoji||"")}" src="${araURL(ids[0])}" alt="${esc(keyword)}" title="Tap to choose a different picture">`;
     }
   }
-  return esc(emoji||"🖼️");
+  return tapEmoji;
 }
+const isNoPic=(p,mark)=>p===mark||p.includes(`>${mark}</span>`);
 let usedAra=false;
 
 /* ---------------- content builders ---------------- */
@@ -540,7 +579,7 @@ async function renderFolder(spec,th){
   if(g==="sight" && spec.mode==="picture"){
     const words=spec.words; const n=words.length; const leftN=Math.min(4,Math.floor(n/2));
     const pics=await Promise.all(words.map(w=>picHTML(w,PICT[w.toLowerCase()]||"❓")));
-    pics.forEach((p,i)=>{if(p==="❓") missingPics.push(words[i])});
+    pics.forEach((p,i)=>{if(isNoPic(p,"❓")) missingPics.push(words[i])});
     const row=i=>`<div style="display:flex;align-items:center;gap:.16in;justify-content:center"><div class="box" style="width:1.05in;height:1.05in;background:#fff"><span style="font-size:.78in;line-height:1">${pics[i].replace("<img",'<img style="width:.95in;height:.95in;object-fit:contain"')}</span></div>${boxHTML(2.1,1.0,"")}</div>`;
     const L=words.slice(0,leftN).map((w,i)=>row(i)).join(""), R=words.slice(leftN).map((w,i)=>row(i+leftN)).join("");
     pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">Sight Words</p><p class="finstr">Look at the picture. Find the word that goes with it. Read it out loud and stick it on.</p><div style="display:flex;flex-direction:column;gap:.1in">${L}</div></div><div class="gutter"></div><div class="half"><div style="display:flex;flex-direction:column;gap:.1in;margin-top:.05in">${R}</div></div>`)]);
@@ -566,7 +605,7 @@ async function renderFolder(spec,th){
   if(g==="cvc"){
     const words=spec.words; const n=words.length; const leftN=Math.min(4,Math.floor(n/2));
     const pics=await Promise.all(words.map(w=>picHTML(w,CVC[w.toLowerCase()]||"❓")));
-    pics.forEach((p,i)=>{if(p==="❓") missingPics.push(words[i])});
+    pics.forEach((p,i)=>{if(isNoPic(p,"❓")) missingPics.push(words[i])});
     const picBox=i=>`<div class="box" style="width:1.0in;height:1.0in;background:#fff;flex:none"><span style="font-size:.74in;line-height:1">${pics[i].replace("<img",'<img style="width:.9in;height:.9in;object-fit:contain"')}</span></div>`;
     const vowelAt=w=>{const i=[...w].findIndex((c,k)=>k>0&&VOWELS.includes(c.toLowerCase()));return i===-1?Math.floor(w.length/2):i;};
     const letterRow=(w,i)=>{
@@ -615,7 +654,7 @@ async function renderFolder(spec,th){
     const piecePic=async(it,size)=>{
       if(it.shape) return shapeSVG(it.shape,it.fill,size*(.62+it.scale*.3));
       const ph=await picHTML(spec.pic===false?null:it.t,it.e||"🖼️");
-      if(ph==="🖼️"){missingPics.push(it.t); it.noPic=true; return `<span style="font-size:${fit(it.t,1.0,.3)};font-weight:700">${esc(it.t)}</span>`;}
+      if(isNoPic(ph,"🖼️")){missingPics.push(it.t); it.noPic=true; return `<span style="font-size:${fit(it.t,1.0,.3)};font-weight:700">${esc(it.t)}</span>`;}
       return ph.includes("<img")?ph.replace("<img",`<img style="width:${size}in;height:${size}in;object-fit:contain"`):`<span style="font-size:${(size*.86).toFixed(2)}in;line-height:1">${ph}</span>`;
     };
     const labelPic=async gr=>{
@@ -838,12 +877,94 @@ async function draw(){
   fitZoom();
 }
 $("#out").addEventListener("click",async e=>{
-  const im=e.target.closest("img[data-k]");
-  if(im){const k=im.dataset.k; picIdx.set(k,(picIdx.get(k)||0)+1); const y=window.scrollY; await draw(); window.scrollTo(0,y); return;}
+  const im=e.target.closest("[data-k]");
+  if(im){openChooser(im.dataset.k); return;}
   const b=e.target.closest("[data-relook]"); if(!b) return;
   const i=+b.dataset.relook; const used=new Set(folders.map(f=>f.th.name));
   let th; do{th=makeThemes(1)[0]}while(used.has(th.name)); folders[i].th=th; await draw();
 });
+/* ---------------- picture chooser ---------------- */
+const pcBack=document.createElement("div"); pcBack.className="pc-back"; pcBack.hidden=true;
+const pc=document.createElement("aside"); pc.className="pc"; pc.hidden=true;
+pc.setAttribute("role","dialog"); pc.setAttribute("aria-modal","true"); pc.setAttribute("aria-label","Choose a picture");
+pc.innerHTML=`<div class="pc-head"><h2></h2><button class="btn primary" type="button" data-pc="done">Done</button></div><div class="pc-body"></div>`;
+document.body.append(pcBack,pc);
+let pcKey=null, pcToken=0, pcLastFocus=null;
+function pictureKeys(){return [...new Set([...$("#out").querySelectorAll("[data-k]")].map(e=>e.dataset.k))]}
+function closeChooser(){pc.hidden=true;pcBack.hidden=true;document.body.style.overflow="";if(pcLastFocus&&pcLastFocus.isConnected)pcLastFocus.focus();}
+async function redrawKeepingPlace(){const y=window.scrollY; await draw(); window.scrollTo(0,y);}
+async function openChooser(key){
+  if(pc.hidden) pcLastFocus=document.activeElement;
+  pcKey=key; pc.hidden=false; pcBack.hidden=false; document.body.style.overflow="hidden";
+  const keys=pictureKeys(); const idx=keys.indexOf(key);
+  pc.querySelector("h2").textContent=key;
+  const body=pc.querySelector(".pc-body");
+  const sample=$("#out").querySelector(`[data-k="${CSS.escape(key)}"]`);
+  const emoji=sample?.dataset.e||"";
+  body.innerHTML=`
+    <div class="pc-nav"><button class="btn ghost" type="button" data-pc="prev" ${idx<=0?"disabled":""}>‹ Previous</button><span>${idx+1} of ${keys.length}</span><button class="btn ghost" type="button" data-pc="next" ${idx>=keys.length-1?"disabled":""}>Next ›</button></div>
+    <div class="pc-cur"><div class="pic"></div><div><p>In the folder now</p>${emoji?`<button class="pc-link" type="button" data-pc="emoji">Use the emoji ${esc(emoji)} instead</button><br>`:""}<button class="pc-link" type="button" data-pc="reset" ${picChoice.has(key)?"":"hidden"}>Go back to the automatic picture</button></div></div>
+    <form class="pc-search"><input type="search" value="${esc(key)}" aria-label="Search ARASAAC pictures"><button class="btn" type="submit">Search</button></form>
+    <div class="pc-grid" aria-live="polite"></div>
+    <label class="pc-up"><span>Upload a photo</span><input type="file" accept="image/*"></label>`;
+  paintCurrent();
+  runSearch(key);
+  body.querySelector("form").addEventListener("submit",ev=>{ev.preventDefault();const q=body.querySelector("input[type=search]").value.trim();if(q)runSearch(q);});
+  body.querySelector("input[type=file]").addEventListener("change",async ev=>{
+    const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    const src=await shrinkPhoto(f); choose({src,ara:false});
+  });
+  (body.querySelector('[data-pc="next"]:not([disabled])')||body.querySelector("input[type=search]")).focus({preventScroll:true});
+}
+function paintCurrent(){
+  const holder=pc.querySelector(".pc-cur .pic"); if(!holder) return;
+  const live=$("#out").querySelector(`[data-k="${CSS.escape(pcKey)}"]`);
+  holder.innerHTML="";
+  if(live&&live.tagName==="IMG"){const im=document.createElement("img");im.src=live.src;im.alt="";holder.append(im);}
+  else holder.textContent=live?live.textContent:"";
+  const ch=picChoice.get(pcKey);
+  pc.querySelectorAll(".pc-opt").forEach(b=>b.classList.toggle("on",Boolean(live&&live.tagName==="IMG"&&b.dataset.src===live.src)));
+  const reset=pc.querySelector('[data-pc="reset"]'); if(reset) reset.hidden=!ch;
+}
+async function runSearch(q){
+  const token=++pcToken; const grid=pc.querySelector(".pc-grid");
+  grid.innerHTML=`<p class="pc-msg">Searching…</p>`;
+  const ids=await araResults(q.toLowerCase());
+  if(token!==pcToken) return;
+  grid.innerHTML="";
+  if(!ids.length){grid.innerHTML=`<p class="pc-msg">${araFailed?"ARASAAC didn\u2019t answer. Check the connection and try again.":`No pictures for \u201c${esc(q)}.\u201d Try a simpler word, or upload a photo.`}</p>`;return;}
+  ids.forEach(id=>{
+    const b=document.createElement("button"); b.type="button"; b.className="pc-opt"; b.dataset.src=araURL(id);
+    b.setAttribute("aria-label",`Use this picture for ${pcKey}`);
+    b.innerHTML=`<img src="${araURL(id)}" alt="" loading="lazy">`;
+    b.addEventListener("click",()=>choose({src:araURL(id),ara:true}));
+    grid.append(b);
+  });
+  paintCurrent();
+}
+async function choose(choice){
+  if(choice) picChoice.set(pcKey,choice); else picChoice.delete(pcKey);
+  saveChoices(); await redrawKeepingPlace(); paintCurrent();
+}
+function shrinkPhoto(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,400/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.85));};im.onerror=()=>res(r.result);im.src=r.result;};
+    r.readAsDataURL(file);
+  });
+}
+pc.addEventListener("click",ev=>{
+  const b=ev.target.closest("[data-pc]"); if(!b) return;
+  const act=b.dataset.pc, keys=pictureKeys(), i=keys.indexOf(pcKey);
+  if(act==="done") closeChooser();
+  if(act==="prev"&&i>0) openChooser(keys[i-1]);
+  if(act==="next"&&i<keys.length-1) openChooser(keys[i+1]);
+  if(act==="emoji") choose({emoji:true});
+  if(act==="reset") choose(null);
+});
+pcBack.addEventListener("click",closeChooser);
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!pc.hidden)closeChooser();});
+
 function fitZoom(){
   const avail=Math.min($("#out").clientWidth,window.innerWidth-24);
   const z=Math.min(1,avail/1008);
