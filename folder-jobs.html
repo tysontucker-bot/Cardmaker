@@ -369,36 +369,36 @@ const VOWELS = ["a","e","i","o","u"];
 // shape:true draws the shape itself so it sorts by shape, not by color.
 const SORTS = [
   {name:"Plants and animals",groups:[
-    {t:"Plants",e:"🌱",k:"plant",items:[["tree","🌳"],["flower","🌸"],["cactus","🌵"],["grass","🌱"],["sunflower","🌻"],["leaf","🍃"],["palm tree","🌴"],["tulip","🌷"]]},
-    {t:"Animals",e:"🐾",k:"animals",items:[["dog","🐶"],["cat","🐱"],["cow","🐄"],["fish","🐟"],["bird","🐦"],["frog","🐸"],["horse","🐴"],["rabbit","🐰"]]}]},
+    {t:"Plants",e:"🌱",k:"plant",items:[["tree","🌳"],["flower","🌸"],["cactus","🌵"],["grass","🌱"],["sunflower","🌻"],["leaf","🍃"],["palm tree","🌴"],["tulip","🌷"],["rose","🌹"],["pine tree","🌲"],["hibiscus","🌺"],["clover","☘️"],["maple leaf","🍁"],["bamboo","🎋"],["herb","🌿"],["potted plant","🪴"],["wheat","🌾"],["lotus","🪷"]]},
+    {t:"Animals",e:"🐾",k:"animals",items:[["dog","🐶"],["cat","🐱"],["cow","🐄"],["fish","🐟"],["bird","🐦"],["frog","🐸"],["horse","🐴"],["rabbit","🐰"],["pig","🐷"],["duck","🦆"],["lion","🦁"],["elephant","🐘"],["turtle","🐢"],["bear","🐻"],["monkey","🐒"],["snake","🐍"],["sheep","🐑"],["giraffe","🦒"],["owl","🦉"],["butterfly","🦋"]]}]},
   {name:"Living and nonliving",groups:[
-    {t:"Living",e:"🌱",k:"living being",items:[["dog","🐶"],["tree","🌳"],["bird","🐦"],["fish","🐟"],["flower","🌸"],["baby","👶"],["frog","🐸"],["butterfly","🦋"]]},
-    {t:"Nonliving",e:"🪨",k:"stone",items:[["rock","🪨"],["chair","🪑"],["car","🚗"],["ball","⚽"],["cup","🥤"],["book","📚"],["shoe","👟"],["pencil","✏️"]]}]},
+    {t:"Living",e:"🌱",k:"living being",items:[["dog","🐶"],["tree","🌳"],["bird","🐦"],["fish","🐟"],["flower","🌸"],["baby","👶"],["frog","🐸"],["butterfly","🦋"],["cat","🐱"],["cow","🐄"],["girl","👧"],["boy","👦"],["horse","🐴"],["cactus","🌵"],["bee","🐝"],["turtle","🐢"],["grass","🌱"],["snake","🐍"]]},
+    {t:"Nonliving",e:"🪨",k:"stone",items:[["rock","🪨"],["chair","🪑"],["car","🚗"],["ball","⚽"],["cup","🥤"],["book","📚"],["shoe","👟"],["pencil","✏️"],["scissors","✂️"],["spoon","🥄"],["bed","🛏️"],["door","🚪"],["clock","⏰"],["crayon","🖍️"],["backpack","🎒"],["bus","🚌"],["kite","🪁"],["phone","📱"]]}]},
   {name:"Sink and float",groups:[
-    {t:"Sink",e:"⬇️",k:"sink",items:[["rock","🪨"],["key","🔑"],["coin","🪙"],["spoon","🥄"],["scissors","✂️"],["bolt","🔩"],["anchor","⚓"],["hammer","🔨"]]},
-    {t:"Float",e:"🛟",k:"float",items:[["duck","🦆"],["leaf","🍃"],["feather","🪶"],["boat","⛵"],["sponge","🧽"],["apple","🍎"],["beach ball","🏐"],["log","🪵"]]}]},
+    {t:"Sink",e:"⬇️",k:"sink",items:[["rock","🪨"],["key","🔑"],["coin","🪙"],["spoon","🥄"],["scissors","✂️"],["bolt","🔩"],["anchor","⚓"],["hammer","🔨"],["fork","🍴"],["paper clip","📎"],["ring","💍"],["wrench","🔧"],["magnet","🧲"],["lock","🔒"],["bell","🔔"],["shell","🐚"]]},
+    {t:"Float",e:"🛟",k:"float",items:[["rubber duck","🦆"],["leaf","🍃"],["feather","🪶"],["boat","⛵"],["sponge","🧽"],["apple","🍎"],["beach ball","🏐"],["log","🪵"],["life ring","🛟"],["canoe","🛶"],["ice cube","🧊"],["orange","🍊"],["pumpkin","🎃"],["balloon","🎈"],["bubbles","🫧"],["bottle","🧴"]]}]},
   {name:"Sound and no sound",groups:[
-    {t:"Sound",e:"🔊",k:"sound",items:[["drum","🥁"],["bell","🔔"],["trumpet","🎺"],["guitar","🎸"],["alarm clock","⏰"],["phone","📞"],["dog","🐶"],["piano","🎹"]]},
-    {t:"No sound",e:"🔇",k:"silence",items:[["book","📚"],["sock","🧦"],["feather","🪶"],["crayon","🖍️"],["rock","🪨"],["leaf","🍃"],["pillow","🛏️"],["spoon","🥄"]]}]},
+    {t:"Sound",e:"🔊",k:"sound",items:[["drum","🥁"],["bell","🔔"],["trumpet","🎺"],["guitar","🎸"],["alarm clock","⏰"],["phone","📞"],["dog","🐶"],["piano","🎹"],["violin","🎻"],["megaphone","📣"],["siren","🚨"],["rooster","🐓"],["train","🚂"],["fire truck","🚒"],["radio","📻"],["saxophone","🎷"]]},
+    {t:"No sound",e:"🔇",k:"silence",items:[["book","📚"],["sock","🧦"],["feather","🪶"],["crayon","🖍️"],["rock","🪨"],["leaf","🍃"],["spoon","🥄"],["cloud","☁️"],["flower","🌸"],["pencil","✏️"],["paper","📄"],["teddy bear","🧸"],["mittens","🧤"],["snail","🐌"],["sponge","🧽"],["cap","🧢"]]}]},
   {name:"Hot and cold",groups:[
-    {t:"Hot",e:"🔥",k:"hot",items:[["sun","☀️"],["fire","🔥"],["soup","🍲"],["coffee","☕"],["oven","🧑‍🍳"],["pizza","🍕"],["candle","🕯️"],["desert","🏜️"]]},
-    {t:"Cold",e:"❄️",k:"cold",items:[["ice","🧊"],["snowman","⛄"],["ice cream","🍦"],["penguin","🐧"],["snow","❄️"],["popsicle","🍧"],["igloo","🛖"],["mittens","🧤"]]}]},
+    {t:"Hot",e:"🔥",k:"hot",items:[["sun","☀️"],["fire","🔥"],["soup","🍲"],["coffee","☕"],["pizza","🍕"],["candle","🕯️"],["desert","🏜️"],["hot pepper","🌶️"],["volcano","🌋"],["tea","🍵"],["thermometer","🌡️"],["fries","🍟"],["popcorn","🍿"],["hot face","🥵"]]},
+    {t:"Cold",e:"❄️",k:"cold",items:[["ice","🧊"],["snowman","⛄"],["ice cream","🍦"],["penguin","🐧"],["snow","❄️"],["shaved ice","🍧"],["mittens","🧤"],["polar bear","🐻‍❄️"],["scarf","🧣"],["cold face","🥶"],["skier","⛷️"],["snowy mountain","🏔️"],["ice skate","⛸️"],["milk","🥛"]]}]},
   {name:"Shapes (circle, square, triangle)",shape:true,groups:[
-    {t:"Circle",shape:"circle",items:[["circle"],["circle"],["circle"],["circle"],["circle"],["circle"]]},
-    {t:"Square",shape:"square",items:[["square"],["square"],["square"],["square"],["square"],["square"]]},
-    {t:"Triangle",shape:"triangle",items:[["triangle"],["triangle"],["triangle"],["triangle"],["triangle"],["triangle"]]}]},
+    {t:"Circle",shape:"circle",items:Array.from({length:8},()=>["circle"])},
+    {t:"Square",shape:"square",items:Array.from({length:8},()=>["square"])},
+    {t:"Triangle",shape:"triangle",items:Array.from({length:8},()=>["triangle"])}]},
   {name:"Colors (red, blue, yellow)",pic:false,groups:[
-    {t:"Red",swatch:"#d62828",items:[["apple","🍎"],["strawberry","🍓"],["fire truck","🚒"],["tomato","🍅"],["cherries","🍒"],["red heart","❤️"]]},
-    {t:"Blue",swatch:"#1d4ed8",items:[["blueberries","🫐"],["jeans","👖"],["blue book","📘"],["whale","🐋"],["blue heart","💙"],["blue car","🚙"]]},
-    {t:"Yellow",swatch:"#f2c200",items:[["banana","🍌"],["sun","☀️"],["lemon","🍋"],["chick","🐤"],["yellow heart","💛"],["corn","🌽"]]}]}
+    {t:"Red",swatch:"#d62828",items:[["apple","🍎"],["strawberry","🍓"],["fire truck","🚒"],["tomato","🍅"],["cherries","🍒"],["red heart","❤️"],["ladybug","🐞"],["stop sign","🛑"],["rose","🌹"],["crab","🦀"],["balloon","🎈"],["chili","🌶️"],["lobster","🦞"],["red car","🚗"]]},
+    {t:"Blue",swatch:"#1d4ed8",items:[["blueberries","🫐"],["jeans","👖"],["blue book","📘"],["whale","🐋"],["blue heart","💙"],["blue car","🚙"],["fish","🐟"],["water drop","💧"],["shirt","👕"],["blue circle","🔵"],["wave","🌊"],["dolphin","🐬"],["cold face","🥶"],["blue butterfly","🦋"]]},
+    {t:"Yellow",swatch:"#f2c200",items:[["banana","🍌"],["sun","☀️"],["lemon","🍋"],["chick","🐤"],["yellow heart","💛"],["star","⭐"],["cheese","🧀"],["sunflower","🌻"],["taxi","🚕"],["lightning","⚡"],["baby chick","🐥"],["yellow circle","🟡"],["corn","🌽"],["bee","🐝"]]}]}
 ];
 const SHAPE_FILLS=[["red","#d62828"],["blue","#1d4ed8"],["green","#2a9d3a"],["yellow","#f2c200"],["purple","#7b3fbf"],["orange","#ef6c00"]];
-function shapeSVG(shape,fill,sizeIn,outline){
+function shapeSVG(shape,fill,sizeIn,outline,turn){
   const f=outline?"none":fill, st=outline?"#222":"#222", sw=outline?3:1.5;
   const body=shape==="circle"?`<circle cx="20" cy="20" r="17" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`
     :shape==="square"?`<rect x="4" y="4" width="32" height="32" fill="${f}" stroke="${st}" stroke-width="${sw}"/>`
     :`<path d="M20 3L37 36H3z" fill="${f}" stroke="${st}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-  return `<svg viewBox="0 0 40 40" style="width:${sizeIn}in;height:${sizeIn}in" aria-label="${shape}">${body}</svg>`;
+  return `<svg viewBox="0 0 40 40" style="width:${sizeIn}in;height:${sizeIn}in${turn?`;transform:rotate(${turn}deg)`:""}" aria-label="${shape}">${body}</svg>`;
 }
 
 const ADJ = "Brave Sunny Rocket Cozy Zippy Lucky Mighty Jolly Swift Bright Bouncy Clever Sparkly Happy Speedy Giant Tiny Silly Golden Cosmic".split(" ");
@@ -652,7 +652,7 @@ async function renderFolder(spec,th){
   if(g==="sort"){
     const groups=spec.groups; const items=spec.items; const showWords=spec.words;
     const piecePic=async(it,size)=>{
-      if(it.shape) return shapeSVG(it.shape,it.fill,size*(.62+it.scale*.3));
+      if(it.shape) return shapeSVG(it.shape,it.fill,size*(.62+it.scale*.3),false,it.turn);
       const ph=await picHTML(spec.pic===false?null:it.t,it.e||"🖼️");
       if(isNoPic(ph,"🖼️")){missingPics.push(it.t); it.noPic=true; return `<span style="font-size:${fit(it.t,1.0,.3)};font-weight:700">${esc(it.t)}</span>`;}
       return ph.includes("<img")?ph.replace("<img",`<img style="width:${size}in;height:${size}in;object-fit:contain"`):`<span style="font-size:${(size*.86).toFixed(2)}in;line-height:1">${ph}</span>`;
@@ -772,6 +772,7 @@ try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").va
   setGoal(v.goal||"sight");}}catch(e){}
 
 /* build specs */
+let sortDecks=null;
 function specsFor(auto,n){
   const specs=[];
   for(let i=0;i<n;i++){
@@ -805,11 +806,19 @@ function specsFor(auto,n){
       const per=Math.floor(total/set.groups.length), extra=total-per*set.groups.length;
       const items=[];
       const fills=shuffle(SHAPE_FILLS);
+      // Each group's items are dealt like cards across this batch of folders, so folders
+      // made together share as few items as possible.
+      if(i===0) sortDecks=set.groups.map(gr=>shuffle(gr.items));
       set.groups.forEach((gr,gi)=>{
         const want=per+(gi<extra?1:0);
-        const pool=set.custom?gr.items.slice(0,want):shuffle(gr.items).slice(0,want);
+        const pool=[];
+        while(pool.length<want&&pool.length<gr.items.length){
+          if(!sortDecks[gi].length) sortDecks[gi]=shuffle(gr.items).filter(x=>!pool.includes(x));
+          if(!sortDecks[gi].length) break;
+          pool.push(sortDecks[gi].shift());
+        }
         pool.forEach(([t,e],k)=>{
-          if(gr.shape){const [cn,hex]=fills[(k+gi*2)%fills.length]; items.push({t:`${cn} ${gr.shape}`,g:gi,shape:gr.shape,fill:hex,scale:Math.random()});}
+          if(gr.shape){const [cn,hex]=fills[(k+gi*2+i)%fills.length]; items.push({t:`${cn} ${gr.shape}`,g:gi,shape:gr.shape,fill:hex,scale:Math.random(),turn:gr.shape==="triangle"?pick([0,0,90,180,270]):gr.shape==="square"?pick([0,0,15,-15]):0});}
           else items.push({t,e,g:gi});
         });
       });
