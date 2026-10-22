@@ -157,6 +157,7 @@ textarea{min-height:86px;resize:vertical}
   <section class="panel" aria-label="Folder settings">
     <div class="goals" role="group" aria-label="Goal">
       <button data-goal="sight" aria-pressed="true">Sight words</button>
+      <button data-goal="cvc" aria-pressed="false">CVC words</button>
       <button data-goal="math" aria-pressed="false">Math within 50</button>
       <button data-goal="cloze" aria-pressed="false">Opinion cloze</button>
       <button data-goal="scramble" aria-pressed="false">Unscramble sentence</button>
@@ -176,6 +177,32 @@ textarea{min-height:86px;resize:vertical}
         <small id="sHint">Autogenerate picks from Dolch pre-primer and primer words.</small></label>
       <label class="f">Words when autogenerating
         <input type="number" id="sCount" min="3" max="10" value="10"></label>
+    </div>
+
+    <!-- CVC -->
+    <div class="fields hidden" data-for="cvc">
+      <label class="f">CVC words <small>Up to 8, separated by commas or new lines. Leave blank to autogenerate.</small>
+        <textarea id="cWords" placeholder="cat, pig, sun, bed, dog"></textarea></label>
+      <label class="f">Folder style
+        <select id="cMode">
+          <option value="build">Build the word with letter tiles</option>
+          <option value="trace">Build the word, letters shown faintly (errorless)</option>
+          <option value="vowel">Fill in the missing vowel</option>
+          <option value="match">Match word to picture</option>
+        </select></label>
+      <label class="f">Vowel focus <small>For autogenerating</small>
+        <select id="cVowel">
+          <option value="all">All short vowels</option>
+          <option value="a">Short a</option>
+          <option value="e">Short e</option>
+          <option value="i">Short i</option>
+          <option value="o">Short o</option>
+          <option value="u">Short u</option>
+        </select></label>
+      <label class="f">Words when autogenerating
+        <input type="number" id="cCount" min="3" max="8" value="6"></label>
+      <label class="f">Goal on the data sheet
+        <input type="text" id="cGoal" value="Reads and builds CVC words with 80% accuracy across 10 sessions."></label>
     </div>
 
     <!-- MATH -->
@@ -273,6 +300,16 @@ const REQUESTS = [
   {t:"quiet time",pic:"🤫",k:"silence"},{t:"to play",pic:"🧸",k:"play"},{t:"help",pic:"🙋",k:"help"},
   {t:"to move",pic:"🏃",k:"run"}
 ];
+// Picturable CVC words, each with an emoji used when ARASAAC is off or has no match.
+const CVC = {
+  cat:"🐱",bat:"🦇",hat:"🎩",map:"🗺️",van:"🚐",pan:"🍳",fan:"🪭",bag:"👜",cap:"🧢",rat:"🐀",can:"🥫",
+  bed:"🛏️",pen:"🖊️",hen:"🐔",net:"🥅",jet:"✈️",web:"🕸️",leg:"🦵",ten:"🔟",red:"🟥",
+  pig:"🐷",pin:"📌",six:"6️⃣",lip:"👄",fin:"🦈",bin:"🗑️",kid:"🧒",
+  dog:"🐶",log:"🪵",pot:"🍲",box:"📦",fox:"🦊",mop:"🧹",cob:"🌽",rod:"🎣",
+  sun:"☀️",bus:"🚌",bug:"🐛",mug:"☕",cup:"🥤",nut:"🥜",hut:"🛖",tub:"🛁"
+};
+const VOWELS = ["a","e","i","o","u"];
+
 const ADJ = "Brave Sunny Rocket Cozy Zippy Lucky Mighty Jolly Swift Bright Bouncy Clever Sparkly Happy Speedy Giant Tiny Silly Golden Cosmic".split(" ");
 const NOUN = "Otter Comet Fox Panda Falcon Turtle Maple Pebble Tiger Koala Rocket Cactus Dolphin Lemon Owl Bison Gecko Puffin Moose Walrus".split(" ");
 const PATTERNS = ["dots","stripes","zigzag","waves","checks","triangles","plus","scallops","diamonds","grid"];
@@ -292,6 +329,7 @@ const SYMBOLS = {
 };
 const GOAL_INFO = {
   sight:{name:"Sight Words",crit:"Reads targeted sight words (set of 10 or fewer) with 80% accuracy across a minimum of 10 targeted sessions."},
+  cvc:{name:"CVC Words",crit:"Reads and builds CVC words with 80% accuracy across 10 sessions."},
   math:{name:"Math Within 50",crit:"Solves 10 addition/subtraction problems within 50 with a calculator and no more than 2 verbal prompts per set, 80% accuracy in 4 of 5 opportunities."},
   cloze:{name:"My Opinion",crit:"Obj. 1: Completes a cloze opinion sentence on a familiar topic with at least 2 descriptive distractors, 100% accuracy in 4 of 5 targeted sessions."},
   scramble:{name:"Build My Sentence",crit:"Obj. 2: Unscrambles and sequences the words of his cloze sentence, 100% accuracy in 4 of 5 targeted sessions."},
@@ -458,6 +496,53 @@ async function renderFolder(spec,th){
     const rows=words.map((w,i)=>`<tr><td class="l">${spec.mode==="say"?(i+1)+". ":""}${esc(w)}</td>${"<td></td>".repeat(10)}</tr>`).join("");
     pages.push(["Data sheet",dataSheet(th,"sight",`<table><tr><th>Word</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">Mark + read correctly, − incorrect or no response. ${spec.mode==="say"?"Say the words in the numbered order above.":""}</p>`)]);
   }
+  if(g==="cvc"){
+    const words=spec.words; const n=words.length; const leftN=Math.min(4,Math.floor(n/2));
+    const pics=await Promise.all(words.map(w=>picHTML(w,CVC[w.toLowerCase()]||"❓")));
+    pics.forEach((p,i)=>{if(p==="❓") missingPics.push(words[i])});
+    const picBox=i=>`<div class="box" style="width:1.0in;height:1.0in;background:#fff;flex:none"><span style="font-size:.74in;line-height:1">${pics[i].replace("<img",'<img style="width:.9in;height:.9in;object-fit:contain"')}</span></div>`;
+    const vowelAt=w=>{const i=[...w].findIndex((c,k)=>k>0&&VOWELS.includes(c.toLowerCase()));return i===-1?Math.floor(w.length/2):i;};
+    const letterRow=(w,i)=>{
+      const letters=[...w]; const lw=Math.min(.85,(3.0-.08*(letters.length-1))/letters.length);
+      const boxes=letters.map((c,k)=>{
+        let inner="";
+        if(spec.mode==="trace") inner=`<span class="ghost" style="font-size:${(lw*.62).toFixed(2)}in;opacity:.35">${esc(c)}</span>`;
+        if(spec.mode==="vowel"&&k!==vowelAt(w)) inner=`<span class="ghost" style="font-size:${(lw*.62).toFixed(2)}in">${esc(c)}</span>`;
+        const style=spec.mode==="vowel"&&k!==vowelAt(w)?"background:#fff":"";
+        return `<div class="box" style="width:${lw.toFixed(2)}in;height:.85in;flex:none;${style}">${inner}${spec.mode==="vowel"&&k!==vowelAt(w)?"":'<span class="dot"></span>'}</div>`;
+      }).join("");
+      return `<div style="display:flex;align-items:center;gap:.12in;justify-content:center">${picBox(i)}<div style="display:flex;gap:.08in">${boxes}</div></div>`;
+    };
+    const matchRow=(w,i)=>`<div style="display:flex;align-items:center;gap:.16in;justify-content:center">${picBox(i)}${boxHTML(2.1,1.0,"")}</div>`;
+    const row=spec.mode==="match"?matchRow:letterRow;
+    const L=words.slice(0,leftN).map((w,i)=>row(w,i)).join(""), R=words.slice(leftN).map((w,i)=>row(w,i+leftN)).join("");
+    const instr={
+      build:"Look at the picture. Say each sound. Find the letters and build the word.",
+      trace:"Look at the picture. Find each letter and stick it on top. Then read the word.",
+      vowel:"Look at the picture. Say the word. Find the missing vowel and stick it in the middle.",
+      match:"Look at the picture. Find the word that goes with it. Read it out loud and stick it on."
+    }[spec.mode];
+    pages.push(["Folder inside",sheet(th,"folder",`<div class="half">${tab(th)}<p class="ftitle">CVC Words</p><p class="finstr">${instr}</p><div style="display:flex;flex-direction:column;gap:.12in">${L}</div></div><div class="gutter"></div><div class="half"><div style="display:flex;flex-direction:column;gap:.12in;margin-top:.05in">${R}</div></div>`)]);
+    if(spec.mode==="match"){
+      pages.push(["Pieces",piecesSheet(th,shuffle(words).map(w=>wordCard(w,1.84,.5)),2.0,.92,"Word cards")]);
+    }else if(spec.mode==="vowel"){
+      const used=words.map(w=>w[vowelAt(w)].toLowerCase());
+      const extra=VOWELS.filter(v=>!used.includes(v));
+      pages.push(["Pieces",piecesSheet(th,shuffle([...used,...extra]).map(v=>wordCard(v,.8,.6)),.9,.9,"Vowel tiles")]);
+    }else{
+      const tiles=words.flatMap(w=>[...w.toLowerCase()]);
+      pages.push(["Pieces",piecesSheet(th,shuffle(tiles).map(c=>wordCard(c,.8,.6)),.9,.9,"Letter tiles")]);
+    }
+    const note={
+      build:"Mark + when every letter is in order and the word is read, − incorrect or no response, P prompted.",
+      trace:"Mark + when every letter is placed and the word is read, − incorrect or no response, P prompted.",
+      vowel:"Mark + when the correct vowel is placed and the word is read, − incorrect or no response, P prompted.",
+      match:"Mark + when the word is on the right picture and read aloud, − incorrect or no response, P prompted."
+    }[spec.mode];
+    const extraNote=spec.mode==="vowel"?` Extra vowel tiles: ${VOWELS.filter(v=>!words.map(w=>w[vowelAt(w)].toLowerCase()).includes(v)).join(", ")||"none"}.`:"";
+    const rows=words.map(w=>`<tr><td class="l">${esc(w)}</td>${"<td></td>".repeat(10)}</tr>`).join("");
+    pages.push(["Data sheet",dataSheet(th,"cvc",`<table><tr><th>Word</th>${sessionHeaders(10,"S")}</tr>${rows}<tr><td class="l">% correct</td>${"<td></td>".repeat(10)}</tr></table><p class="crit" style="margin-top:.08in">${note}${extraNote}</p>`)]);
+  }
   if(g==="math"){
     const probs=spec.probs; const half=Math.ceil(probs.length/2);
     const row=(p,i)=>`<div class="prob"><span class="pn">${i+1}.</span><span>${p.a} ${p.sym} ${p.b} =</span>${boxHTML(1.3,.85,"")}</div>`;
@@ -529,8 +614,10 @@ document.querySelectorAll(".goals button").forEach(b=>b.addEventListener("click"
 
 /* saved settings */
 const KEY="folderjobs:v1";
-function save(){try{localStorage.setItem(KEY,JSON.stringify({goal,s:$("#sWords").value,m:$("#sMode").value,own:$("#mOwn").value,r:$("#rOwn").value}))}catch(e){}}
-try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").value=v.s||"";$("#sMode").value=v.m||"match";$("#mOwn").value=v.own||"";$("#rOwn").value=v.r||"";setGoal(v.goal||"sight");}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({goal,s:$("#sWords").value,m:$("#sMode").value,own:$("#mOwn").value,r:$("#rOwn").value,
+  cw:$("#cWords").value,cm:$("#cMode").value,cv:$("#cVowel").value,cg:$("#cGoal").value}))}catch(e){}}
+try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").value=v.s||"";$("#sMode").value=v.m||"match";$("#mOwn").value=v.own||"";$("#rOwn").value=v.r||"";
+  $("#cWords").value=v.cw||"";if(v.cm)$("#cMode").value=v.cm;if(v.cv)$("#cVowel").value=v.cv;if(v.cg)$("#cGoal").value=v.cg;setGoal(v.goal||"sight");}}catch(e){}
 
 /* build specs */
 function specsFor(auto,n){
@@ -541,6 +628,21 @@ function specsFor(auto,n){
       if(auto){words=shuffle($("#sMode").value==="picture"?Object.keys(PICT):DOLCH).slice(0,Math.min(10,Math.max(3,+$("#sCount").value||10)));}
       else{words=splitList($("#sWords").value); if(!words.length) throw "Add at least one sight word, or use Autogenerate."; if(words.length>10){words=words.slice(0,10);msgNote="Only the first 10 words were used.";} words=shuffle(words);}
       specs.push({goal,words,mode:$("#sMode").value});
+    }
+    if(goal==="cvc"){
+      let words;
+      const own=splitList($("#cWords").value).map(w=>w.toLowerCase());
+      if(auto||!own.length){
+        if(!auto&&!own.length) throw "Add at least one CVC word, or use Autogenerate.";
+        const v=$("#cVowel").value;
+        const bank=Object.keys(CVC).filter(w=>v==="all"||w[1]===v);
+        words=shuffle(bank).slice(0,Math.min(8,Math.max(3,+$("#cCount").value||6)));
+      }else{
+        words=own; if(words.length>8){words=words.slice(0,8);msgNote="Only the first 8 words were used.";}
+        words=shuffle(words);
+      }
+      GOAL_INFO.cvc.crit=$("#cGoal").value.trim()||GOAL_INFO.cvc.crit;
+      specs.push({goal,words,mode:$("#cMode").value});
     }
     if(goal==="math"){
       let probs=(!auto&&$("#mOwn").value.trim())?parseOwnMath($("#mOwn").value):null;
