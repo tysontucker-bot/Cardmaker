@@ -95,6 +95,17 @@ textarea{min-height:86px;resize:vertical}
 .sheets{display:flex;flex-direction:column;gap:16px;overflow-x:auto}
 .sheet-wrap{width:max-content;max-width:100%}
 .sheet-label{font-size:13px;color:var(--muted);margin:0 0 4px}
+.picreview h2{margin:0 0 4px;font-size:20px}
+.picreview p{margin:0 0 12px;color:var(--muted);font-size:15px}
+.prv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.prv{display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.prv-pic{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;color:#1F2A44;border:2px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;font:inherit}
+.prv-pic .im{width:84px;height:84px;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1}
+.prv-pic img{max-width:100%;max-height:100%;object-fit:contain}
+.prv-pic b{font-size:13px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prv-pic.picked{border-color:var(--teal)}
+.prv-pic small{font-size:11px;color:#3d6b66}
+.prv-swap{border:2px solid var(--line);background:transparent;color:inherit;border-radius:8px;padding:4px;font:inherit;font-size:13px;cursor:pointer}
 
 /* ---------- printable sheets ---------- */
 .sheet{
@@ -905,6 +916,27 @@ async function build(auto){
   save();
 }
 let missingPics=[];
+/* every picture in these folders, up top, so the wrong ones are quick to catch */
+function drawPicReview(){
+  const out=$("#out"); const seen=new Map();
+  out.querySelectorAll(".sheets [data-k]").forEach(el=>{const k=el.dataset.k; if(!seen.has(k)) seen.set(k,el);});
+  if(!seen.size) return;
+  const tiles=[...seen].map(([k,el])=>{
+    const isImg=el.tagName==="IMG", ch=picChoice.get(k);
+    const pic=isImg?`<img src="${esc(el.getAttribute("src"))}" alt="">`:esc(el.textContent);
+    const canSwap=$("#useAra").checked&&!(ch&&ch.src&&!ch.ara);
+    return `<div class="prv"><button class="prv-pic${ch?" picked":""}" type="button" data-rk="${esc(k)}" aria-label="Change the picture for ${esc(k)}"><span class="im">${pic}</span><b>${esc(k)}</b>${ch?`<small>You picked</small>`:""}</button>${canSwap?`<button class="prv-swap" type="button" data-swap="${esc(k)}" aria-label="Next ARASAAC picture for ${esc(k)}">↻ Next picture</button>`:""}</div>`;
+  }).join("");
+  const box=document.createElement("section"); box.className="panel picreview"; box.setAttribute("aria-label","Pictures in these folders");
+  box.innerHTML=`<h2>Pictures in these folders (${seen.size})</h2><p>Check these before printing. Tap a picture to search for a different one or upload a photo. “Next picture” swaps to the next ARASAAC result. Your picks are remembered on this device.</p><div class="prv-grid">${tiles}</div>`;
+  out.prepend(box);
+}
+async function swapPic(key){
+  const ids=await araResults(key); if(!ids.length){$("#msg").textContent=`No other ARASAAC pictures for \u201c${key}.\u201d Tap the picture to search a different word or upload a photo.`;return;}
+  const ch=picChoice.get(key); const cur=ch&&ch.src?ids.findIndex(id=>araURL(id)===ch.src):(ch&&ch.emoji?-1:0);
+  const nextId=ids[(cur+1)%ids.length];
+  picChoice.set(key,{src:araURL(nextId),ara:true}); saveChoices(); await redrawKeepingPlace();
+}
 async function draw(){
   usedAra=false; missingPics=[];
   const out=$("#out"); out.innerHTML="";
@@ -917,9 +949,14 @@ async function draw(){
     out.appendChild(sec);
   }
   if(usedAra){out.querySelectorAll(".folder,.pieces").forEach(s=>s.insertAdjacentHTML("beforeend",`<div class="attrib">Pictograms by Sergio Palao, property of the Government of Arag\u00f3n, from ARASAAC (arasaac.org), CC BY-NC-SA</div>`));}
+  drawPicReview();
   fitZoom();
 }
 $("#out").addEventListener("click",async e=>{
+  const sw=e.target.closest("[data-swap]");
+  if(sw){sw.disabled=true; await swapPic(sw.dataset.swap); return;}
+  const rk=e.target.closest("[data-rk]");
+  if(rk){openChooser(rk.dataset.rk); return;}
   const im=e.target.closest("[data-k]");
   if(im){openChooser(im.dataset.k); return;}
   const b=e.target.closest("[data-relook]"); if(!b) return;
@@ -933,7 +970,7 @@ pc.setAttribute("role","dialog"); pc.setAttribute("aria-modal","true"); pc.setAt
 pc.innerHTML=`<div class="pc-head"><h2></h2><button class="btn primary" type="button" data-pc="done">Done</button></div><div class="pc-body"></div>`;
 document.body.append(pcBack,pc);
 let pcKey=null, pcToken=0, pcLastFocus=null;
-function pictureKeys(){return [...new Set([...$("#out").querySelectorAll("[data-k]")].map(e=>e.dataset.k))]}
+function pictureKeys(){return [...new Set([...$("#out").querySelectorAll(".sheets [data-k]")].map(e=>e.dataset.k))]}
 function closeChooser(){pc.hidden=true;pcBack.hidden=true;document.body.style.overflow="";if(pcLastFocus&&pcLastFocus.isConnected)pcLastFocus.focus();}
 async function redrawKeepingPlace(){const y=window.scrollY; await draw(); window.scrollTo(0,y);}
 async function openChooser(key){
