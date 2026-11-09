@@ -14,6 +14,7 @@ import {
   sessionsToCSV,
   programOf
 } from './data-logic.js?v=20261021g';
+import { queueSession, loadParachuteNames, parachuteStudents, parachuteStaff, getBy, setBy, onLinkStatus } from './parachute-link.js?v=20261109a';
 
 const STORAGE_KEY = 'cardmaker-live-data-v1';
 export const TRIAL_COUNT = 5;
@@ -68,7 +69,7 @@ function programFromSession(s) {
 // program: { programId, relationshipId, label }. A saved card set is its own program,
 // so two sets that use the same matching relationship keep separate graphs.
 // getPicture(target, relationshipId) resolves to { imageUrl, alt } or null.
-export function openLiveDataSheet({ preview, status, targetLabels, program, getPicture, student, date }) {
+export function openLiveDataSheet({ preview, status, targetLabels, program, getPicture, student, date, getChoices, arraySize }) {
   if (targetLabels.length === 0) {
     status.textContent = 'Please enter at least one target item.';
     preview.innerHTML = '';
@@ -137,10 +138,78 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
   const saveLine = el('p', 'live-save no-print');
   saveLine.setAttribute('aria-live', 'polite');
 
+  // The Parachute: where this session is sent, and who took it
+  const linkLine = el('div', 'live-link no-print');
+  linkLine.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 10px;font-weight:600';
+  const linkStatus = el('span', 'live-link-status', '');
+  const byLabel = el('label', '');
+  byLabel.style.cssText = 'display:flex;align-items:center;gap:6px';
+  byLabel.append(el('span', '', 'Taken by'));
+  const bySelect = el('select', 'live-input');
+  bySelect.style.cssText = 'min-height:40px;font:inherit';
+  byLabel.append(bySelect);
+  const nameWarn = el('span', '', '');
+  nameWarn.style.cssText = 'color:#b3261e;flex-basis:100%';
+  linkLine.append(linkStatus, byLabel, nameWarn);
+  function fillBy() {
+    const names = [...new Set([getBy(), ...parachuteStaff()])];
+    bySelect.innerHTML = '';
+    names.forEach((n) => { const o = el('option', '', n); o.value = n; bySelect.append(o); });
+    bySelect.value = getBy();
+  }
+  bySelect.addEventListener('change', () => { setBy(bySelect.value); if (session && hasAnyMarks(session)) queueSession(session, arraySize); });
+  onLinkStatus((text, bad) => { linkStatus.textContent = text; linkStatus.style.color = bad ? '#b3261e' : '#1e6b2e'; });
+  function checkName() {
+    const n = studentInput.value.trim(), list = parachuteStudents();
+    nameWarn.textContent = n && list.length && !list.some((x) => sameStudent(x, n))
+      ? `“${n}” isn’t on The Parachute’s Students tab, so it won’t line up with that student’s other data. Use their initials (${list.join(', ')}).`
+      : '';
+  }
+  fillBy();
+  loadParachuteNames().then(() => { fillBy(); renderHistory(); checkName(); });
+
+  // On a miss: which card did they pick?
+  function askPicked(rowIndex, slot) {
+    const row = session.rows[rowIndex];
+    let options = getChoices ? (getChoices(row.target) || []) : [];
+    options = options.map(String).filter((x) => x && x !== row.target);
+    if (options.length === 0) options = session.rows.map((r) => r.target).filter((x) => x !== row.target);
+    const wrap = el('div', 'live-pick no-print');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    const box = el('div', '');
+    box.style.cssText = 'background:#fff;width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:18px 18px 28px;display:flex;flex-direction:column;gap:12px';
+    box.append(el('strong', '', `Missed “${row.target}”. What did they pick?`));
+    const grid = el('div', '');
+    grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px';
+    const done = (value) => {
+      wrap.remove();
+      if (value) {
+        row.picked = row.picked || [];
+        row.picked[slot] = value;
+        persist();
+        renderTable();
+      }
+    };
+    [...new Set(options)].concat('Something else').forEach((opt) => {
+      const b = el('button', 'live-btn', opt);
+      b.type = 'button';
+      b.style.cssText = 'min-height:52px;padding:0 20px;font-size:1.1rem';
+      b.addEventListener('click', () => done(opt === 'Something else' ? 'Other' : opt));
+      grid.append(b);
+    });
+    const skip = el('button', 'live-btn live-btn--quiet', 'Skip');
+    skip.type = 'button';
+    skip.addEventListener('click', () => done(''));
+    box.append(grid, skip);
+    wrap.append(box);
+    wrap.addEventListener('click', (e) => { if (e.target === wrap) done(''); });
+    document.body.append(wrap);
+  }
+
   const weekly = el('section', 'weekly-progress-section');
   const history = el('section', 'live-history no-print');
 
-  page.append(actions, title, programLine, header, chips, key, tableWrap, saveLine, weekly, history);
+  page.append(actions, title, programLine, header, chips, key, tableWrap, saveLine, linkLine, weekly, history);
   preview.append(page);
 
   // ── Session lookup ──
@@ -164,6 +233,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
         programId: program.programId,
         relationshipId: program.relationshipId,
         relationshipLabel: program.label,
+        arraySize: arraySize || '',
         rows: (addTargets || []).map((target) => ({ target, trials: emptyTrials(TRIAL_COUNT) })),
         updatedAt: null
       };
@@ -189,6 +259,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
       ? `Saved on this device at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
       : 'Could not save. This browser may be in private mode, so export a CSV before closing.';
     saveLine.classList.toggle('live-save--error', !ok);
+    queueSession(session, arraySize);
   }
 
   // ── Rendering ──
@@ -250,23 +321,28 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     const slot = row.trials.indexOf('');
     if (slot === -1) return;
     row.trials[slot] = mark;
-    undoStack.push({ rowIndex, slot, previous: '' });
+    if (row.picked) row.picked[slot] = '';
+    undoStack.push({ rowIndex, slot, previous: '', previousPicked: '' });
     changed();
+    if (mark === '-') askPicked(rowIndex, slot);
   }
 
   function clearTrial(rowIndex, slot) {
     const row = session.rows[rowIndex];
     if (!row.trials[slot]) return;
-    undoStack.push({ rowIndex, slot, previous: row.trials[slot] });
+    undoStack.push({ rowIndex, slot, previous: row.trials[slot], previousPicked: (row.picked || [])[slot] || '' });
     // The next tap on that target fills this box again.
     row.trials[slot] = '';
+    if (row.picked) row.picked[slot] = '';
     changed();
   }
 
   function undoLast() {
     const last = undoStack.pop();
     if (!last) return;
-    session.rows[last.rowIndex].trials[last.slot] = last.previous;
+    const r = session.rows[last.rowIndex];
+    r.trials[last.slot] = last.previous;
+    if (r.picked || last.previousPicked) { r.picked = r.picked || []; r.picked[last.slot] = last.previousPicked || ''; }
     changed();
   }
 
@@ -315,7 +391,9 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
 
       row.trials.forEach((value, trialIndex) => {
         const td = el('td', 'live-trial-cell');
+        const pk = (row.picked || [])[trialIndex];
         const box = el('button', 'trial-btn', value === '-' ? '−' : value);
+        if (value === '-' && pk) { const small = el('small', '', pk); small.style.cssText = 'display:block;font-size:.65rem;line-height:1;font-weight:600'; box.append(small); }
         box.type = 'button';
         box.dataset.mark = value || 'empty';
         box.disabled = !value;
@@ -433,6 +511,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     store.sessions.forEach((s) => {
       if (s.student && !knownStudents.some((k) => sameStudent(k, s.student))) knownStudents.push(s.student);
     });
+    parachuteStudents().forEach((s) => { if (!knownStudents.some((k) => sameStudent(k, s))) knownStudents.push(s); });
     knownStudents.sort((a, b) => a.localeCompare(b));
     knownStudents.forEach((student) => {
       const option = el('option');
@@ -477,6 +556,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
         if (!window.confirm(`Delete ${s.student}’s ${formatShortDate(s.date)} session? This can’t be undone.`)) return;
         store.sessions = store.sessions.filter((other) => other !== s);
         saveStore(store);
+        queueSession({ ...s, rows: s.rows.map((r) => ({ target: r.target, trials: emptyTrials(TRIAL_COUNT), picked: [] })) }, arraySize);
         if (s === session) {
           loadSession({
             student: s.student,
@@ -521,7 +601,7 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     });
   }
 
-  studentInput.addEventListener('change', switchSession);
+  studentInput.addEventListener('change', () => { switchSession(); checkName(); });
   dateInput.addEventListener('change', switchSession);
 
   clearBtn.addEventListener('click', () => {
@@ -529,7 +609,9 @@ export function openLiveDataSheet({ preview, status, targetLabels, program, getP
     if (!window.confirm('Clear every mark in this session?')) return;
     session.rows.forEach((row) => {
       row.trials = emptyTrials(TRIAL_COUNT);
+      row.picked = [];
     });
+    queueSession(session, arraySize); // removes it from The Parachute too
     store.sessions = store.sessions.filter((s) => s !== session);
     saveStore(store);
     undoStack = [];

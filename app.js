@@ -20,7 +20,7 @@ const symbolCache = new Map();
 
 // The data sheets load only when you open them, so if one of their files is missing or
 // out of date, card making still works and you get a message instead of a blank page.
-const VERSION = '20261021g';
+const VERSION = '20261109a';
 async function loadDataModule(name) {
   try {
     return await import(`./${name}.js?v=${VERSION}`);
@@ -620,9 +620,18 @@ async function openTakeData() {
           label: `${currentSet.name} (${relationshipLabel(relationshipId)})`
         }
       : { programId: relationshipId, relationshipId, label: relationshipLabel(relationshipId) },
-    getPicture: getTargetPicture
+    getPicture: getTargetPicture,
+    getChoices: choicesOnScreen,
+    arraySize: arraySizeSelect.value
   });
 }
+
+// The other cards a target appears with, so a miss can record what was picked
+function choicesFor(cards, target) {
+  const card = (cards || []).find((c) => (c.sourceTarget?.left ?? c.stimulus) === target);
+  return card ? (card.choices || []).filter((x) => x !== card.correctChoice) : [];
+}
+function choicesOnScreen(target) { return choicesFor(currentCards, target); }
 
 // The picture for a target in a saved set, using the pictures picked for that set.
 async function pictureFromSet(set, target) {
@@ -656,6 +665,8 @@ function resolveAssignment(setId) {
     return {
       targets,
       textOnly: TEXT_ONLY_RELATIONSHIPS.has(relationshipId),
+      getChoices: choicesOnScreen,
+      arraySize: arraySizeSelect.value,
       getPicture: (target) => getTargetPicture(target, relationshipId),
       program: useSet
         ? {
@@ -671,6 +682,8 @@ function resolveAssignment(setId) {
   return {
     targets: parseTargetLines(set.targetsText).map((t) => t.left),
     textOnly: TEXT_ONLY_RELATIONSHIPS.has(set.relationshipId),
+    getChoices: (target) => choicesFor(set.cards, target),
+    arraySize: set.arraySize,
     getPicture: (target) => pictureFromSet(set, target),
     program: {
       programId: `set:${set.id}`,
@@ -707,6 +720,8 @@ async function openGroup() {
         targetLabels: assignment.targets,
         program: assignment.program,
         getPicture: assignment.getPicture,
+        getChoices: assignment.getChoices,
+        arraySize: assignment.arraySize,
         student: name,
         date
       });

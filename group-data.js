@@ -2,7 +2,8 @@
 // +, − and P buttons. Data lands in the same saved sessions as the one-student sheet,
 // so weekly graphs, history and CSV export all include group data.
 
-import { loadStore, saveStore, makeId, TRIAL_COUNT } from './live-data.js?v=20261021g';
+import { loadStore, saveStore, makeId, TRIAL_COUNT } from './live-data.js?v=20261109a';
+import { queueSession } from './parachute-link.js?v=20261109a';
 import {
   scoreSession,
   scoreTrials,
@@ -327,6 +328,7 @@ function showSession(options, groupsData, group, assignments, date) {
         programId: a.program.programId,
         relationshipId: a.program.relationshipId,
         relationshipLabel: a.program.label,
+        arraySize: a.arraySize || '',
         rows: a.targets.map((target) => ({ target, trials: emptyTrials(TRIAL_COUNT) })),
         updatedAt: null
       };
@@ -503,6 +505,8 @@ function showSession(options, groupsData, group, assignments, date) {
       }
     });
     ok = saveStore(store);
+    // send each student's session to The Parachute
+    students.forEach((student) => { if (student.session.updatedAt) queueSession(student.session, student.arraySize); });
     saveLine.textContent = ok
       ? `Saved on this device at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
       : 'Could not save. This browser may be in private mode, so export a CSV before closing.';
