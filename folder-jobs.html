@@ -167,6 +167,10 @@ textarea{min-height:86px;resize:vertical}
 .bin-label .bp img{width:.6in;height:.6in;object-fit:contain}
 .bin-label b{font-size:.3in;color:var(--d);line-height:1.05}
 .bin .spot{background:#fff}
+.bin-label.cell{box-sizing:border-box;flex-direction:column;justify-content:center;gap:.03in;padding:.04in}
+.bin-label.cell .bp{font-size:.56in}
+.bin-label.cell .bp img{width:.64in;height:.64in}
+.bin-label.cell b{line-height:1}
 .zone-label{font-size:.17in;color:var(--d);font-weight:700;margin:0}
 .want{display:flex;align-items:center;justify-content:center;gap:.16in;font-size:.44in;font-weight:700;flex-wrap:wrap}
 .corner-sym{position:absolute;top:.1in;right:.12in;width:.42in;height:.42in}
@@ -569,7 +573,7 @@ const GOAL_INFO = {
 
 const SIZES={
   regular:{label:"Regular"},
-  large:{label:"Large",rows:4,perGroup:2,req:4,kmax:2.2},
+  large:{label:"Large",rows:4,perGroup:3,req:4,kmax:2.2},
   xl:{label:"Extra large",rows:2,perGroup:1,req:2,kmax:3.6}
 };
 /* ---------------- helpers ---------------- */
@@ -828,7 +832,12 @@ async function renderFolder(spec,th){
     const labels=await Promise.all(groups.map(labelPic));
     const counts=groups.map((_,gi)=>items.filter(it=>it.g===gi).length);
     const three=groups.length===3;
-    const binHTML=(gi,cols,spot,compact)=>`<div class="bin${compact||sizeKey()!=="regular"?" compact":""}"><div class="bin-label"><span class="bp">${labels[gi]}</span><b>${esc(groups[gi].t)}</b></div><div class="grid" style="grid-template-columns:repeat(${cols},${spot}in);gap:.1in">${Array.from({length:counts[gi]},()=>`<div class="spot" style="width:${spot}in;height:${spot}in"><span class="dot"></span></div>`).join("")}</div></div>`;
+    // Large: the group's symbol sits in the grid as its own square, so 3 pieces fit beside it (2 x 2) without shrinking.
+    const labelInGrid=sizeKey()==="large";
+    const spotsHTML=(gi,spot)=>Array.from({length:counts[gi]},()=>`<div class="spot" style="width:${spot}in;height:${spot}in"><span class="dot"></span></div>`).join("");
+    const binHTML=(gi,cols,spot,compact)=>labelInGrid
+      ?`<div class="bin compact"><div class="grid" style="grid-template-columns:repeat(2,${spot}in);gap:.1in"><div class="bin-label cell" style="width:${spot}in;height:${spot}in"><span class="bp">${labels[gi]}</span><b style="font-size:${fit(groups[gi].t,spot,.24)}">${esc(groups[gi].t)}</b></div>${spotsHTML(gi,spot)}</div></div>`
+      :`<div class="bin${compact||sizeKey()!=="regular"?" compact":""}"><div class="bin-label"><span class="bp">${labels[gi]}</span><b>${esc(groups[gi].t)}</b></div><div class="grid" style="grid-template-columns:repeat(${cols},${spot}in);gap:.1in">${spotsHTML(gi,spot)}</div></div>`;
     const maxCount=Math.max(...counts);
     // Every spot is the same size, and the cut-out cards are made just smaller than it.
     const spot=three||maxCount>6?.9:1.1;
