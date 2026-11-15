@@ -58,6 +58,14 @@ h2{font-size:16px;margin:18px 0 6px;color:var(--muted);font-weight:600}
 .queue{margin-top:12px;background:var(--prombg);color:var(--text);border:2px solid var(--prom);border-radius:12px;padding:10px 12px;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .queue[hidden]{display:none}
 .queue span{flex:1}
+.head .who{flex:none}
+.head .grow{flex:1;min-width:0}
+.change{margin:0;padding:8px 12px;font-size:15px;flex:none}
+.subj{display:inline-block;border-radius:999px;padding:1px 9px;font-size:13px;font-weight:800;margin-right:4px;vertical-align:1px}
+.ask{font-size:19px;color:var(--text);margin:18px 0 10px}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.pick button{min-height:72px;border-radius:14px;border:3px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:26px;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pick button[aria-pressed=true]{border-color:var(--teal);background:var(--goodbg)}
 .queue button{margin:0;padding:8px 14px}
 </style>
 </head>
@@ -84,6 +92,13 @@ function readPayload(){
   }catch(e){return null}
 }
 const D=readPayload();
+// Labels printed for the Classroom Data Hub carry its code (k) and a subject (u), and no student:
+// whoever scans picks the student from the Roster each time, so a folder works for anyone.
+const HUB=!!(D&&D.k);
+const SUBJ={ENG:["English","#F2B705","#111"],MATH:["Math","#1565C0","#fff"],SS:["Social Studies","#C62828","#fff"],SCI:["Science","#2E7D32","#fff"]};
+let student=D&&D.s?String(D.s).trim().toUpperCase():"";
+let roster=[], onPicker=false;
+const RKEY="folderdata:roster:"+(D?D.w:"");
 const endpoint=(w,dm)=>`https://script.google.com/${dm?`a/macros/${encodeURIComponent(dm)}/`:"macros/"}s/${encodeURIComponent(w)}/exec`;
 
 /* ---------- sessions that couldn't send yet wait on this phone ---------- */
@@ -112,6 +127,45 @@ function paintQueue(){
 }
 window.addEventListener("online",flush);
 
+/* ---------- who is doing this folder (Data Hub labels) ---------- */
+function cachedRoster(){try{const r=JSON.parse(localStorage.getItem(RKEY)||"[]");return Array.isArray(r)?r:[]}catch(e){return []}}
+async function loadRoster(){
+  const u=new URL(endpoint(D.w,D.dm)); u.searchParams.set("key",D.k);
+  const r=await fetch(u.toString(),{cache:"no-store"});
+  const j=JSON.parse(await r.text());
+  if(!j||!j.ok) throw new Error(j&&j.error==="wrong-code"?"This label's Data Hub code doesn't match. Print a new label.":"error");
+  const list=(j.students||[]).map(x=>String(x.initials||"")).filter(Boolean);
+  try{localStorage.setItem(RKEY,JSON.stringify(list))}catch(e){}
+  return list;
+}
+function headHTML(showWho){
+  const sj=SUBJ[D.u];
+  return `<div class="head"><div class="who" aria-label="Student">${showWho?esc(student||"—"):"?"}</div><div class="grow"><h1>${esc(D.t||"Folder job")}</h1><p>${sj?`<span class="subj" style="background:${sj[1]};color:${sj[2]}">${sj[0]}</span>`:""}${esc(D.f||"")}${D.f?" folder":""}</p></div>${showWho&&HUB?`<button class="btn change" type="button" id="change">Change</button>`:""}</div>`;
+}
+function drawPicker(msg,retry){
+  app.innerHTML=`${headHTML(false)}
+    <h2 class="ask">Who’s doing this folder?</h2>
+    <div class="pick">${roster.map(i=>`<button type="button" data-i="${esc(i)}" aria-pressed="${i===student}">${esc(i)}</button>`).join("")}</div>
+    ${msg?`<p class="key">${esc(msg)}</p>`:""}${retry?`<button class="btn primary" type="button" id="retryRoster">Try again</button>`:""}
+    <div class="queue" id="queue" hidden><span></span><button class="btn" type="button" id="retry">Send now</button></div>`;
+  app.querySelectorAll(".pick button").forEach(b=>b.onclick=()=>{student=b.dataset.i;onPicker=false;paint();});
+  const rr=$("#retryRoster"); if(rr) rr.onclick=picker;
+  $("#retry").onclick=flush; paintQueue();
+}
+async function picker(){
+  onPicker=true;
+  roster=cachedRoster();
+  drawPicker(roster.length?"":"Loading students…");
+  try{
+    const list=await loadRoster();
+    if(!onPicker) return;
+    roster=list; drawPicker(roster.length?"":"No students on the Roster tab of the Data Hub yet.");
+  }catch(err){
+    if(!onPicker) return;
+    drawPicker(roster.length?"":(err.message&&err.message!=="error"?err.message:"Couldn’t load the student list. Check the internet connection."),!roster.length);
+  }
+}
+
 /* ---------- screens ---------- */
 function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -133,12 +187,12 @@ function start(){
   rows = D.a ? Array.from({length:Math.max(1,D.n||5)},(_,i)=>`Opportunity ${i+1}`) : D.i.slice();
   res = rows.map(()=>"");
   dirty=false;
-  paint();
+  if(HUB&&!student) picker(); else paint();
 }
 function paint(){
   const keyLine = D.a ? "+ requested on their own · − no request · P prompted" : "+ correct on their own · − incorrect or no response · P prompted";
   app.innerHTML=`
-    <div class="head"><div class="who" aria-label="Student">${esc(D.s||"—")}</div><div><h1>${esc(D.t||"Folder job")}</h1><p>${esc(D.f||"")}${D.f?" folder":""}</p></div></div>
+    ${headHTML(true)}
     <div class="meta"><label>Date <input type="date" id="date" value="${today()}"></label></div>
     <p class="key">${keyLine}. Tap again to clear. Leave anything you didn’t present blank.</p>
     <div class="items">${rows.map((r,i)=>itemHTML(r,i)).join("")}</div>
@@ -168,6 +222,7 @@ function wire(){
   $("#notes").addEventListener("input",()=>{dirty=true});
   $("#send").onclick=send;
   $("#retry").onclick=flush;
+  const ch=$("#change"); if(ch) ch.onclick=picker;
 }
 function counts(){let c=0,x=0,p=0;res.forEach(v=>{if(v==="+")c++;else if(v==="-")x++;else if(v==="P")p++;});return {c,x,p,n:c+x+p};}
 function paintSum(){
@@ -177,8 +232,9 @@ function paintSum(){
 }
 async function send(){
   const btn=$("#send"); if(btn.disabled) return;
-  const body={id:uid(),date:$("#date").value||today(),s:D.s||"",f:D.f||"",t:D.t||"",g:D.g||"",
+  const body={id:uid(),date:$("#date").value||today(),s:student||"",f:D.f||"",t:D.t||"",g:D.g||"",
     r:rows.map((r,i)=>[r,res[i]]).filter(x=>x[1]),notes:$("#notes").value.trim()};
+  if(HUB){body.key=D.k;body.action="folder";body.u=D.u||"";}
   const entry={w:D.w,dm:D.dm||"",body};
   btn.disabled=true; btn.textContent="Sending…";
   const q=getQueue(); q.push(entry); setQueue(q);   // keep it safe first, then send
@@ -188,11 +244,11 @@ async function send(){
   dirty=false;
   const {c,n}=counts();
   app.innerHTML=`<div class="card">${sent
-    ?`<h1>Saved to your sheet ✓</h1><p>${esc(D.s||"")} · ${esc(D.t||"")}: ${c} of ${n} on their own (${Math.round(c/n*100)}%).</p>`
+    ?`<h1>Saved${HUB?"":" to your sheet"} ✓</h1><p>${esc(student||"")} · ${esc(D.t||"")}: ${c} of ${n} on their own (${Math.round(c/n*100)}%).</p>`
     :`<h1>Saved on this phone</h1><p>It couldn’t reach your Google Sheet${why?"":", probably no connection"}. It will send the next time you open any folder QR code with a connection, or tap Send now.</p>${why?`<p class="key">${esc(why)}</p>`:""}`}
     <button class="btn primary" type="button" id="again">Take data again</button></div>
     <div class="queue" id="queue" hidden><span></span><button class="btn" type="button" id="retry">Send now</button></div>`;
-  $("#again").onclick=start; $("#retry").onclick=flush;
+  $("#again").onclick=()=>{if(HUB) student=""; start();}; $("#retry").onclick=flush;
   paintQueue();
   if(!sent) setTimeout(flush,4000);
 }

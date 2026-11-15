@@ -349,103 +349,13 @@ textarea{min-height:86px;resize:vertical}
     </div>
     <div class="qrset" id="qrSet" hidden>
       <div class="fields">
-        <label class="f">Student initials <small>Printed in the QR code, so initials only.</small><input type="text" id="qInit" maxlength="8" placeholder="JM" autocomplete="off"></label>
-        <label class="f">Google Sheet web app link <small>From the one-time setup below.</small><input type="text" id="qUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false"></label>
+        <label class="f">Subject <small>Fills that subject’s box on The Vis.</small><select id="qSubj"><option value="ENG">English</option><option value="MATH">Math</option><option value="SS">Social Studies</option><option value="SCI">Science</option></select></label>
+        <label class="f">Data Hub link <small>The same link you use in The Vis.</small><input type="text" id="qUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false"></label>
+        <label class="f">Data Hub code <small>The same code you use in The Vis.</small><input type="text" id="qKey" autocomplete="off" spellcheck="false"></label>
       </div>
       <p class="note" id="qStatus"></p>
-      <details>
-        <summary>One-time setup: connect a Google Sheet</summary>
-        <ol>
-          <li>Make a new Google Sheet in your school Google Drive and name it something like “Folder Jobs data.”</li>
-          <li>In the sheet, go to <b>Extensions › Apps Script</b>. Delete what's there, then paste the script (Copy script button below).</li>
-          <li>Click <b>Deploy › New deployment</b>. Pick the type <b>Web app</b>. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, then Deploy and allow access.</li>
-          <li>Copy the <b>Web app URL</b> it gives you and paste it in the box above.</li>
-          <li>Tap <b>Test the link</b>. A test row shows up in a new “Sessions” tab in your sheet. You can delete it.</li>
-        </ol>
-        <div class="row"><button class="btn" type="button" id="copyScript">Copy script</button><button class="btn ghost" type="button" id="testLink">Test the link</button></div>
-        <pre id="gsCode">// Folder Jobs data: receives sessions from the folder QR codes and adds them to this sheet.
-// Paste into Extensions &gt; Apps Script, then Deploy &gt; New deployment &gt; Web app
-// (Execute as: Me, Who has access: Anyone).
-
-var SESSION_HEADERS = [&quot;Saved&quot;, &quot;Date&quot;, &quot;Student&quot;, &quot;Folder&quot;, &quot;Task&quot;, &quot;Correct&quot;, &quot;Incorrect&quot;, &quot;Prompted&quot;, &quot;Scored&quot;, &quot;% on their own&quot;, &quot;Item results&quot;, &quot;Notes&quot;, &quot;ID&quot;];
-var ITEM_HEADERS = [&quot;Date&quot;, &quot;Student&quot;, &quot;Folder&quot;, &quot;Task&quot;, &quot;Item&quot;, &quot;Result&quot;, &quot;ID&quot;];
-var WORD = { &quot;+&quot;: &quot;Correct&quot;, &quot;-&quot;: &quot;Incorrect&quot;, &quot;P&quot;: &quot;Prompted&quot; };
-
-function doGet() {
-  return ContentService.createTextOutput(&quot;Folder Jobs data is connected. Sessions will show up in your Google Sheet.&quot;);
-}
-
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    var d = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sessions = sheetFor_(ss, &quot;Sessions&quot;, SESSION_HEADERS);
-    var items = sheetFor_(ss, &quot;Items&quot;, ITEM_HEADERS);
-    var id = clean_(d.id);
-
-    // the phone may resend a session it wasn&#x27;t sure went through; skip repeats
-    var last = sessions.getLastRow();
-    if (id &amp;&amp; last &gt; 1) {
-      var from = Math.max(2, last - 500);
-      var ids = sessions.getRange(from, 13, last - from + 1, 1).getValues();
-      for (var k = 0; k &lt; ids.length; k++) if (String(ids[k][0]) === id) return text_(&quot;duplicate&quot;);
-    }
-
-    var res = (d.r || []).filter(function (r) { return r &amp;&amp; WORD[r[1]]; });
-    var c = 0, x = 0, p = 0;
-    res.forEach(function (r) { if (r[1] === &quot;+&quot;) c++; else if (r[1] === &quot;-&quot;) x++; else p++; });
-    var n = c + x + p;
-    var date = parseDate_(d.date);
-    var detail = res.map(function (r) { return r[0] + &quot; &quot; + (r[1] === &quot;-&quot; ? &quot;−&quot; : r[1]); }).join(&quot;, &quot;);
-
-    sessions.appendRow([new Date(), date, clean_(d.s), clean_(d.f), clean_(d.t), c, x, p, n, n ? c / n : &quot;&quot;, clean_(detail), clean_(d.notes), id]);
-    var row = sessions.getLastRow();
-    sessions.getRange(row, 2).setNumberFormat(&quot;m/d/yyyy&quot;);
-    sessions.getRange(row, 10).setNumberFormat(&quot;0%&quot;);
-
-    if (res.length) {
-      var rows = res.map(function (r) { return [date, clean_(d.s), clean_(d.f), clean_(d.t), clean_(r[0]), WORD[r[1]], id]; });
-      var start = items.getLastRow() + 1;
-      items.getRange(start, 1, rows.length, ITEM_HEADERS.length).setValues(rows);
-      items.getRange(start, 1, rows.length, 1).setNumberFormat(&quot;m/d/yyyy&quot;);
-    }
-    return text_(&quot;ok&quot;);
-  } catch (err) {
-    return text_(&quot;error: &quot; + err);
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function sheetFor_(ss, name, headers) {
-  var sh = ss.getSheetByName(name);
-  if (!sh) {
-    sh = ss.insertSheet(name);
-    sh.appendRow(headers);
-    sh.getRange(1, 1, 1, headers.length).setFontWeight(&quot;bold&quot;);
-    sh.setFrozenRows(1);
-  }
-  return sh;
-}
-
-function parseDate_(s) {
-  var m = String(s || &quot;&quot;).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
-}
-
-// text only, and never something the sheet would read as a formula
-function clean_(v) {
-  var s = String(v == null ? &quot;&quot; : v).slice(0, 2000);
-  return /^[=+\-@]/.test(s) ? &quot;&#x27;&quot; + s : s;
-}
-
-function text_(s) {
-  return ContentService.createTextOutput(s);
-}
-</pre>
-      </details>
+      <p class="note">No student is printed on the label. Whoever scans it picks the student from your Data Hub Roster, so one folder works for any student, year after year.</p>
+      <div class="row"><button class="btn ghost" type="button" id="testLink">Test the link</button></div>
     </div>
     <p class="note">Tap any picture in the preview to see other pictures and choose one, or upload your own. The folder and its pieces always change together, and your choice is remembered for that word.</p>
 
@@ -938,12 +848,12 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify({goal,s:$("#sWords")
   cw:$("#cWords").value,cm:$("#cMode").value,cv:$("#cVowel").value,cg:$("#cGoal").value,
   os:$("#oSet").value,oc:$("#oCount").value,og:$("#oGoal").value,ow:$("#oWords").checked,
   ox:["#oA","#oAItems","#oB","#oBItems","#oC","#oCItems"].map(x=>$(x).value),
-  ps:sizeKey(),wq:$("#withQR").checked,qi:$("#qInit").value,qu:$("#qUrl").value,wd:$("#withData").checked}))}catch(e){}}
+  ps:sizeKey(),wq:$("#withQR").checked,qs:$("#qSubj").value,qk:$("#qKey").value,qu:$("#qUrl").value,wd:$("#withData").checked}))}catch(e){}}
 try{const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v){$("#sWords").value=v.s||"";$("#sMode").value=v.m||"match";$("#mOwn").value=v.own||"";$("#rOwn").value=v.r||"";
   $("#cWords").value=v.cw||"";if(v.cm)$("#cMode").value=v.cm;if(v.cv)$("#cVowel").value=v.cv;if(v.cg)$("#cGoal").value=v.cg;
   if(v.os){$("#oSet").value=v.os;$("#oCustom").classList.toggle("hidden",v.os!=="custom");}if(v.oc)$("#oCount").value=v.oc;if(v.og)$("#oGoal").value=v.og;if(v.ow===false)$("#oWords").checked=false;
   if(Array.isArray(v.ox))["#oA","#oAItems","#oB","#oBItems","#oC","#oCItems"].forEach((x,i)=>{$(x).value=v.ox[i]||""});
-  if(v.ps&&SIZES[v.ps])$("#pSize").value=v.ps;$("#withQR").checked=!!v.wq;$("#qInit").value=v.qi||"";$("#qUrl").value=v.qu||"";if(v.wd===false)$("#withData").checked=false;
+  if(v.ps&&SIZES[v.ps])$("#pSize").value=v.ps;$("#withQR").checked=!!v.wq;if(v.qs)$("#qSubj").value=v.qs;$("#qKey").value=v.qk||"";$("#qUrl").value=v.qu||"";if(v.wd===false)$("#withData").checked=false;
   setGoal(v.goal||"sight");}}catch(e){}
 qrState();
 
@@ -1139,7 +1049,7 @@ function deployId(u){const d=deployInfo(u);return d?d.id:"";}
 function execURL(u){const d=deployInfo(u);return d?`https://script.google.com/${d.dm?`a/macros/${d.dm}/`:"macros/"}s/${d.id}/exec`:"";}
 function b64url(str){const bytes=new TextEncoder().encode(str);let bin="";bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
 function dataLink(f){
-  const sp=f.spec, d={v:1,s:$("#qInit").value.trim(),f:f.th.name,c:f.th.c,g:sp.goal,t:GOAL_INFO[sp.goal].name,i:sp.items||[],w:deployId($("#qUrl").value)};
+  const sp=f.spec, d={v:2,u:$("#qSubj").value,k:$("#qKey").value.trim(),f:f.th.name,c:f.th.c,g:sp.goal,t:GOAL_INFO[sp.goal].name,i:sp.items||[],w:deployId($("#qUrl").value)};
   const dm=(deployInfo($("#qUrl").value)||{}).dm; if(dm) d.dm=dm;
   if(sp.requestMode){d.a=1;d.n=5;}
   return new URL("folder-data.html",location.href).href.split("#")[0]+"#d="+b64url(JSON.stringify(d));
@@ -1149,16 +1059,16 @@ function qrSVG(text){
   return q.createSvgTag({cellSize:4,margin:16,scalable:true});
 }
 function qrState(){
-  const on=$("#withQR").checked, id=deployId($("#qUrl").value);
+  const on=$("#withQR").checked, id=deployId($("#qUrl").value), key=$("#qKey").value.trim();
   $("#qrSet").hidden=!on;
-  $("#qStatus").textContent=!on?"":id?"Connected to your sheet. Each folder gets a QR label on the last page.":$("#qUrl").value.trim()?"That doesn't look like a web app link. It should start with https://script.google.com/macros/s/ and end with /exec.":"Paste your Google Sheet web app link to print QR codes. First time? Open the setup steps below.";
-  return on&&id;
+  $("#qStatus").textContent=!on?"":id&&key?"Ready. Each folder gets a QR label on the last page.":$("#qUrl").value.trim()&&!id?"That doesn't look like a web app link. It should start with https://script.google.com/macros/s/ and end with /exec.":!id?"Paste your Data Hub link and code to print QR codes.":"Type your Data Hub code to print QR codes.";
+  return on&&id&&key;
 }
 function drawQRLabels(){
   if(!qrState()||!folders.length) return;
   const labels=folders.map(f=>{
     const url=dataLink(f);
-    return `<div class="qrlab" style="${themeStyle(f.th)}" data-url="${esc(url)}">${tab(f.th)}<div class="task">${esc(GOAL_INFO[f.spec.goal].name)}</div>${$("#qInit").value.trim()?`<div class="who">${esc($("#qInit").value.trim())}</div>`:""}<div class="code">${qrSVG(url)}</div><p class="scan">Scan to take data</p></div>`;
+    return `<div class="qrlab" style="${themeStyle(f.th)}" data-url="${esc(url)}">${tab(f.th)}<div class="task">${esc(GOAL_INFO[f.spec.goal].name)}</div><div class="who">${esc(({ENG:"English",MATH:"Math",SS:"Social Studies",SCI:"Science"})[$("#qSubj").value]||"")}</div><div class="code">${qrSVG(url)}</div><p class="scan">Scan to take data</p></div>`;
   }).join("");
   const sec=document.createElement("section");
   sec.innerHTML=`<div class="fset-head"><h2>QR data labels</h2><span class="note" style="margin:0">Cut out each label and glue it on the front of its folder (match the colors and name). Scan it with your phone after the student works.</span></div><div class="sheets"><div class="sheet-wrap"><p class="sheet-label">QR labels</p><div class="sheet qrsheet"><div class="qrgrid">${labels}</div></div></div></div>`;
@@ -1311,23 +1221,18 @@ $("#withQR").addEventListener("change",()=>{
   qrState(); save(); if(folders.length) draw();
 });
 let qrTimer=0;
-["#qInit","#qUrl"].forEach(x=>$(x).addEventListener("input",()=>{qrState();save();clearTimeout(qrTimer);qrTimer=setTimeout(()=>{if(folders.length&&$("#withQR").checked) draw();},500);}));
-$("#copyScript").addEventListener("click",async()=>{
-  const t=$("#gsCode").textContent;
-  try{await navigator.clipboard.writeText(t);$("#copyScript").textContent="Copied ✓";}
-  catch(e){const r=document.createRange();r.selectNodeContents($("#gsCode"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);$("#copyScript").textContent="Selected, now copy";}
-  setTimeout(()=>{$("#copyScript").textContent="Copy script"},2500);
-});
+["#qKey","#qUrl"].forEach(x=>$(x).addEventListener("input",()=>{qrState();save();clearTimeout(qrTimer);qrTimer=setTimeout(()=>{if(folders.length&&$("#withQR").checked) draw();},500);}));
+$("#qSubj").addEventListener("change",()=>{save();if(folders.length&&$("#withQR").checked) draw();});
 $("#testLink").addEventListener("click",async()=>{
-  const id=deployId($("#qUrl").value);
-  if(!id){$("#qStatus").textContent="Paste the web app link first.";return;}
-  $("#qStatus").textContent="Sending a test row…";
-  const body={id:"test-"+Date.now().toString(36),date:new Date().toISOString().slice(0,10),s:"TEST",f:"Test",t:"Connection test",g:"",r:[["Test item","+"]],notes:"You can delete this row."};
+  const id=deployId($("#qUrl").value), key=$("#qKey").value.trim();
+  if(!id||!key){$("#qStatus").textContent="Paste the Data Hub link and code first.";return;}
+  $("#qStatus").textContent="Checking…";
   try{
-    const r=await fetch(execURL($("#qUrl").value),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});
-    const t=(await r.text()).trim();
-    $("#qStatus").textContent=t==="ok"||t==="duplicate"?"It works ✓ A TEST row is in the Sessions tab of your sheet. You can delete it.":"The sheet answered with an error: "+t.slice(0,140)+". Check that you pasted the whole script and deployed it as a web app.";
-  }catch(e){$("#qStatus").textContent="Couldn't reach the sheet. Check that the deployment's access is set to Anyone, then try again. If you changed the script, deploy a new version.";}
+    const u=new URL(execURL($("#qUrl").value)); u.searchParams.set("key",key);
+    const r=await fetch(u.toString(),{cache:"no-store"});
+    const j=JSON.parse(await r.text());
+    $("#qStatus").textContent=j.ok?`It works ✓ ${(j.students||[]).length} students on the Roster.`:j.error==="wrong-code"?"The code doesn't match your Data Hub.":"The Data Hub answered with an error.";
+  }catch(e){$("#qStatus").textContent="Couldn't reach the Data Hub. Check the link, and that the deployment's access is set to Anyone.";}
 });
 $("#printBtn").addEventListener("click",()=>{
   if(!folders.length){$("#msg").textContent="Make a folder first, then print.";return;}
